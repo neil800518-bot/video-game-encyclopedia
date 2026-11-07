@@ -85,6 +85,45 @@ def build_image_index():
     return entries
 
 
+def query_regions(img):
+    """Generate candidate game areas for screenshots with browser/background margins."""
+    img = prepare_image(img)
+    w, h = img.size
+    regions = [('完整截图', img)]
+    # Central portrait game canvases are often embedded in wide screenshots.
+    for fraction in (0.28, 0.38, 0.50, 0.65, 0.80):
+        crop_w = max(32, int(w * fraction))
+        if crop_w >= w:
+            continue
+        for center in (0.40, 0.50, 0.60):
+            left = max(0, min(w - crop_w, int(w * center - crop_w / 2)))
+            regions.append((f'中央区域 {int(fraction * 100)}%', img.crop((left, 0, left + crop_w, h))))
+    # Also handle screenshots with toolbars at the top/bottom.
+    for top, bottom in ((0.06, 0.96), (0.12, 0.92)):
+        regions.append(('去除上下边框', img.crop((0, int(h * top), w, int(h * bottom)))))
+    return regions
+
+
+def rank_image_matches(query, index, limit=5):
+    # Compare every candidate crop against each reference image.
+    # Slightly penalize aggressive crops to reduce accidental false matches.
+    candidates = []
+    for label, region in query_regions(query):
+        features = image_features(region)
+        fraction = region.width * region.height / max(1, query.width * query.height)
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        candidates.append((label, features, penalty))
+    ranked = []
+    for game, features in index:
+        best_score, best_region = max(
+            ((similarity(candidate, features) - penalty, label)
+             for label, candidate, penalty in candidates),
+            key=lambda result: result[0],
+        )
+        ranked.append((max(0.0, best_score), game, best_region))
+    return sorted(ranked, key=lambda item: item[0], reverse=True)[:limit]
+
+
 def decode_pasted_image(data):
     if not isinstance(data, str) or not data.startswith('data:image/'):
         return None
@@ -145,16 +184,15 @@ with image_tab:
     if query_image is not None:
         st.image(query_image, caption='待比对截图', width=260)
         with st.spinner('正在比对数据库图片…'):
-            query_features = image_features(query_image)
             index = build_image_index()
-            ranked = sorted(((similarity(query_features, feat), game) for game, feat in index), key=lambda x: x[0], reverse=True)[:5]
-        st.caption(f'已比对 {len(index)} 张有图片的游戏记录；缺图游戏不参与图片搜索。')
+            ranked = rank_image_matches(query_image, index)
+        st.caption(f'v2 多区域搜索 · 已比对 {len(index)} 张有图片的游戏记录；缺图游戏不参与图片搜索。')
         if not ranked:
             st.warning('数据库中尚无可比对的图片。')
         else:
             st.subheader('最相似的 5 款游戏')
             cols = st.columns(5)
-            for i, (score, game) in enumerate(ranked):
+            for i, (score, game, matched_region) in enumerate(ranked):
                 with cols[i]:
                     path = safe_image_path(game)
                     if path:
@@ -163,6 +201,7 @@ with image_tab:
                     st.caption(f"厂商：{game.get('provider', '未知')}")
                     st.caption(f"游戏 ID：{game.get('id', '无')}")
                     st.caption(f'图片相似分数：{score * 100:.1f}/100')
+                    st.caption(f'比对区域：{matched_region}')
             st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
     else:
         st.info('上传或贴上图片后，会自动显示最相似的 5 款游戏。')

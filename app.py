@@ -1,98 +1,168 @@
-
+import base64
+import io
 import json
 from pathlib import Path
 
+import numpy as np
 import streamlit as st
+import streamlit.components.v1 as components
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_FILE = BASE_DIR / "data" / "games.json"
-IMAGE_DIR = BASE_DIR / "data" / "images"
+DATA_FILE = BASE_DIR / 'data' / 'games.json'
+IMAGE_DIR = BASE_DIR / 'data' / 'images'
+PASTE_DIR = BASE_DIR / 'paste_component'
 
-st.set_page_config(
-    page_title="电子游戏百科全书",
-    page_icon="🎮",
-    layout="wide",
-)
+st.set_page_config(page_title='电子游戏百科全书', page_icon='🎮', layout='wide')
+st.title('🎮 电子游戏百科全书')
+st.caption('Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图')
 
-st.title("🎮 电子游戏百科全书")
-st.caption("Video Game Encyclopedia")
-st.write("搜寻游戏名称、筛选游戏厂商，浏览游戏图片。")
-
-
+@st.cache_data(show_spinner=False)
 def load_games():
-    if not DATA_FILE.exists():
+    if not DATA_FILE.is_file():
         return []
+    with DATA_FILE.open('r', encoding='utf-8') as f:
+        data = json.load(f)
+    return [g for g in data if isinstance(g, dict)] if isinstance(data, list) else []
 
+
+def safe_image_path(game):
+    name = str(game.get('image') or '')
+    if not name or Path(name).name != name:
+        return None
+    path = IMAGE_DIR / name
+    return path if path.is_file() else None
+
+
+def prepare_image(img):
+    img = ImageOps.exif_transpose(img).convert('RGB')
+    img.thumbnail((900, 900))
+    return img
+
+
+def image_features(img):
+    # Structural grayscale thumbnail, gradient-sign difference hash and RGB histogram.
+    img = prepare_image(img)
+    gray = ImageOps.fit(img.convert('L'), (32, 32), method=Image.Resampling.LANCZOS)
+    gray_array = np.asarray(gray, dtype=np.float32) / 255.0
+    gray_array = (gray_array - gray_array.mean()) / (gray_array.std() + 0.12)
+    hash_image = ImageOps.fit(img.convert('L'), (17, 16), method=Image.Resampling.LANCZOS)
+    pixels = np.asarray(hash_image, dtype=np.int16)
+    dhash = (pixels[:, 1:] > pixels[:, :-1]).reshape(-1)
+    color = ImageOps.fit(img, (64, 64), method=Image.Resampling.LANCZOS)
+    rgb = np.asarray(color, dtype=np.uint8)
+    hist = []
+    for channel in range(3):
+        h, _ = np.histogram(rgb[:, :, channel], bins=16, range=(0, 256))
+        hist.append(h.astype(np.float32) / rgb[:, :, channel].size)
+    return gray_array, dhash, np.concatenate(hist)
+
+
+def similarity(a, b):
+    gray_a, hash_a, hist_a = a
+    gray_b, hash_b, hist_b = b
+    structural = max(0.0, float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1]))
+    if not np.isfinite(structural):
+        structural = 0.0
+    hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+    color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+    return 0.48 * structural + 0.32 * hash_score + 0.20 * color_score
+
+
+@st.cache_resource(show_spinner='建立图片索引中…')
+def build_image_index():
+    entries = []
+    for game in load_games():
+        path = safe_image_path(game)
+        if path is None:
+            continue
+        try:
+            with Image.open(path) as image:
+                features = image_features(image)
+            entries.append((game, features))
+        except (OSError, ValueError, UnidentifiedImageError):
+            continue
+    return entries
+
+
+def decode_pasted_image(data):
+    if not isinstance(data, str) or not data.startswith('data:image/'):
+        return None
     try:
-        with DATA_FILE.open("r", encoding="utf-8") as file:
-            data = json.load(file)
-        return data if isinstance(data, list) else []
-    except (OSError, json.JSONDecodeError):
-        st.error("游戏资料库读取失败，请检查 games.json。")
-        return []
+        payload = base64.b64decode(data.split(',', 1)[1], validate=True)
+        if len(payload) > 12 * 1024 * 1024:
+            return None
+        return Image.open(io.BytesIO(payload)).copy()
+    except (ValueError, OSError, IndexError, UnidentifiedImageError):
+        return None
 
 
-games = load_games()
+search_tab, image_tab = st.tabs(['🔍 名称 / ID 搜索', '🖼️ 以图搜图'])
 
-search = st.text_input(
-    "🔍 搜寻游戏",
-    placeholder="输入游戏名称或关键词",
-)
+with search_tab:
+    search = st.text_input('搜寻游戏', placeholder='输入游戏名称、厂商或游戏 ID，例如 CG-0010')
+    games = load_games()
+    providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('provider')})
+    provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
+    filtered = []
+    for game in games:
+        if provider != '全部厂商' and str(game.get('provider', '')) != provider:
+            continue
+        terms = [str(game.get(k, '')) for k in ('name', 'id', 'provider')]
+        if search.casefold() not in ' '.join(terms).casefold():
+            continue
+        filtered.append(game)
+    st.write(f'共找到 {len(filtered)} 款游戏')
+    if not filtered:
+        st.info('目前没有符合条件的游戏。')
+    else:
+        cols = st.columns(4)
+        for i, game in enumerate(filtered):
+            with cols[i % 4]:
+                path = safe_image_path(game)
+                if path:
+                    st.image(str(path), use_container_width=True)
+                else:
+                    st.caption('暂无游戏图片')
+                st.subheader(str(game.get('name') or '未命名游戏'))
+                st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
 
-providers = sorted({
-    str(game.get("provider", "")).strip()
-    for game in games
-    if isinstance(game, dict) and game.get("provider")
-})
-
-provider = st.selectbox(
-    "游戏厂商",
-    ["全部厂商"] + providers,
-)
-
-filtered = []
-
-for game in games:
-    if not isinstance(game, dict):
-        continue
-
-    name = str(game.get("name", ""))
-    game_provider = str(game.get("provider", ""))
-    game_id = str(game.get("id", ""))
-
-    if (
-        search.casefold() not in name.casefold()
-        and search.casefold() not in game_id.casefold()
-    ):
-        continue
-
-    if provider != "全部厂商" and game_provider != provider:
-        continue
-
-    filtered.append(game)
-
-st.write(f"共找到 {len(filtered)} 款游戏")
-
-if not filtered:
-    st.info("目前没有符合条件的游戏。")
-else:
-    columns = st.columns(4)
-
-    for index, game in enumerate(filtered):
-        with columns[index % 4]:
-            image_name = str(game.get("image", ""))
-            image_path = IMAGE_DIR / image_name
-
-            if (
-                image_name
-                and image_path.is_file()
-                and image_path.resolve().is_relative_to(
-                    IMAGE_DIR.resolve()
-                )
-            ):
-                st.image(str(image_path), use_container_width=True)
-            else:
-                st.caption("暂无游戏图片")
-
-            st.subheader(str(game.get("name", "未命名游戏")))
-            st.caption(str(game.get("provider", "未知厂商")))
+with image_tab:
+    st.write('将截图拖入下方上传框，或在贴图区域点击后按 **Command + V**（Windows：Ctrl + V）。')
+    uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key='reverse_upload')
+    paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
+    pasted = paste_component(key='clipboard_paste', default=None)
+    query_image = None
+    if uploaded is not None:
+        try:
+            query_image = Image.open(uploaded).copy()
+        except (OSError, UnidentifiedImageError):
+            st.error('上传文件不是有效图片。')
+    elif pasted:
+        query_image = decode_pasted_image(pasted)
+        if query_image is None:
+            st.warning('贴上的图片无法读取，或图片超过 12 MB。')
+    if query_image is not None:
+        st.image(query_image, caption='待比对截图', width=260)
+        with st.spinner('正在比对数据库图片…'):
+            query_features = image_features(query_image)
+            index = build_image_index()
+            ranked = sorted(((similarity(query_features, feat), game) for game, feat in index), key=lambda x: x[0], reverse=True)[:5]
+        st.caption(f'已比对 {len(index)} 张有图片的游戏记录；缺图游戏不参与图片搜索。')
+        if not ranked:
+            st.warning('数据库中尚无可比对的图片。')
+        else:
+            st.subheader('最相似的 5 款游戏')
+            cols = st.columns(5)
+            for i, (score, game) in enumerate(ranked):
+                with cols[i]:
+                    path = safe_image_path(game)
+                    if path:
+                        st.image(str(path), use_container_width=True)
+                    st.markdown(f"**{i+1}. {game.get('name', '未命名游戏')}**")
+                    st.caption(f"厂商：{game.get('provider', '未知')}")
+                    st.caption(f"游戏 ID：{game.get('id', '无')}")
+                    st.caption(f'图片相似分数：{score * 100:.1f}/100')
+            st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
+    else:
+        st.info('上传或贴上图片后，会自动显示最相似的 5 款游戏。')

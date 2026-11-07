@@ -137,6 +137,10 @@ def decode_pasted_image(data):
         return None
 
 
+# Reset both upload and clipboard components by rotating their widget keys.
+if 'image_input_version' not in st.session_state:
+    st.session_state.image_input_version = 0
+
 left_col, right_col = st.columns(2, gap='large')
 games = load_games()
 providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('provider')})
@@ -147,9 +151,12 @@ with left_col:
 with right_col:
     st.subheader('🖼️ 以图搜图')
     st.caption('上传截图，或点击贴图框后按 Command + V（Windows：Ctrl + V）')
-    uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key='reverse_upload')
+    uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key=f'reverse_upload_{st.session_state.image_input_version}')
     paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
-    pasted = paste_component(key='clipboard_paste', default=None)
+    pasted = paste_component(key=f'clipboard_paste_{st.session_state.image_input_version}', default=None)
+    if st.button('🗑️ 清除圖片', key='clear_search_image'):
+        st.session_state.image_input_version += 1
+        st.rerun()
 filtered = []
 for game in games:
     if provider != '全部厂商' and str(game.get('provider', '')) != provider:

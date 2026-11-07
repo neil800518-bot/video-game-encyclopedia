@@ -149,21 +149,6 @@ for game in games:
     if search.casefold() not in ' '.join(terms).casefold():
         continue
     filtered.append(game)
-st.write(f'共找到 {len(filtered)} 款游戏')
-if not filtered:
-    st.info('目前没有符合条件的游戏。')
-else:
-    cols = st.columns(4)
-    for i, game in enumerate(filtered):
-        with cols[i % 4]:
-            path = safe_image_path(game)
-            if path:
-                st.image(str(path), use_container_width=True)
-            else:
-                st.caption('暂无游戏图片')
-            st.subheader(str(game.get('name') or '未命名游戏'))
-            st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
-
 st.divider()
 st.subheader('🖼️ 以图搜图')
 st.write('将截图拖入下方上传框，或在贴图区域点击后按 **Command + V**（Windows：Ctrl + V）。')
@@ -204,3 +189,21 @@ if query_image is not None:
         st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
 else:
     st.info('上传或贴上图片后，会自动显示最相似的 5 款游戏。')
+
+st.divider()
+st.subheader('📚 名称 / ID 搜索结果')
+st.write(f'共找到 {len(filtered)} 款游戏')
+if not filtered:
+    st.info('目前没有符合条件的游戏。')
+else:
+    cols = st.columns(4)
+    for i, game in enumerate(filtered):
+        with cols[i % 4]:
+            path = safe_image_path(game)
+            if path:
+                st.image(str(path), use_container_width=True)
+            else:
+                st.caption('暂无游戏图片')
+            st.subheader(str(game.get('name') or '未命名游戏'))
+            st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
+

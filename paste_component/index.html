@@ -1,0 +1,80 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { margin: 0; font-family: sans-serif; }
+    #paste-area {
+      border: 2px dashed #9ca3af;
+      border-radius: 10px;
+      padding: 22px;
+      text-align: center;
+      cursor: pointer;
+      color: #555;
+    }
+    #paste-area:focus {
+      border-color: #2563eb;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="paste-area" tabindex="0">
+    點擊此區域後按 Command + V 貼上圖片
+  </div>
+
+  <script>
+    function sendMessage(type, data) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: type,
+        ...data
+      }, "*");
+    }
+
+    function sendImage(file) {
+      if (!file || !file.type.startsWith("image/")) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        sendMessage("streamlit:setComponentValue", {
+          value: reader.result,
+          dataType: "json"
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.addEventListener("paste", (event) => {
+      const items = event.clipboardData?.items || [];
+      for (const item of items) {
+        if (item.type.startsWith("image/")) {
+          event.preventDefault();
+          sendImage(item.getAsFile());
+          break;
+        }
+      }
+    });
+
+    const area = document.getElementById("paste-area");
+
+    area.addEventListener("dragover", (event) => {
+      event.preventDefault();
+    });
+
+    area.addEventListener("drop", (event) => {
+      event.preventDefault();
+      sendImage(event.dataTransfer.files[0]);
+    });
+
+    sendMessage("streamlit:componentReady", {
+      apiVersion: 1
+    });
+
+    sendMessage("streamlit:setFrameHeight", {
+      height: 100
+    });
+  </script>
+</body>
+</html>

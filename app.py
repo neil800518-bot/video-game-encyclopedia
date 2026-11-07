@@ -136,72 +136,71 @@ def decode_pasted_image(data):
         return None
 
 
-search_tab, image_tab = st.tabs(['🔍 名称 / ID 搜索', '🖼️ 以图搜图'])
+st.subheader('🔍 名称 / ID 搜索')
+search = st.text_input('搜寻游戏', placeholder='输入游戏名称、厂商或游戏 ID，例如 CG-0010')
+games = load_games()
+providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('provider')})
+provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
+filtered = []
+for game in games:
+    if provider != '全部厂商' and str(game.get('provider', '')) != provider:
+        continue
+    terms = [str(game.get(k, '')) for k in ('name', 'id', 'provider')]
+    if search.casefold() not in ' '.join(terms).casefold():
+        continue
+    filtered.append(game)
+st.write(f'共找到 {len(filtered)} 款游戏')
+if not filtered:
+    st.info('目前没有符合条件的游戏。')
+else:
+    cols = st.columns(4)
+    for i, game in enumerate(filtered):
+        with cols[i % 4]:
+            path = safe_image_path(game)
+            if path:
+                st.image(str(path), use_container_width=True)
+            else:
+                st.caption('暂无游戏图片')
+            st.subheader(str(game.get('name') or '未命名游戏'))
+            st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
 
-with search_tab:
-    search = st.text_input('搜寻游戏', placeholder='输入游戏名称、厂商或游戏 ID，例如 CG-0010')
-    games = load_games()
-    providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('provider')})
-    provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
-    filtered = []
-    for game in games:
-        if provider != '全部厂商' and str(game.get('provider', '')) != provider:
-            continue
-        terms = [str(game.get(k, '')) for k in ('name', 'id', 'provider')]
-        if search.casefold() not in ' '.join(terms).casefold():
-            continue
-        filtered.append(game)
-    st.write(f'共找到 {len(filtered)} 款游戏')
-    if not filtered:
-        st.info('目前没有符合条件的游戏。')
+st.divider()
+st.subheader('🖼️ 以图搜图')
+st.write('将截图拖入下方上传框，或在贴图区域点击后按 **Command + V**（Windows：Ctrl + V）。')
+uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key='reverse_upload')
+paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
+pasted = paste_component(key='clipboard_paste', default=None)
+query_image = None
+if uploaded is not None:
+    try:
+        query_image = Image.open(uploaded).copy()
+    except (OSError, UnidentifiedImageError):
+        st.error('上传文件不是有效图片。')
+elif pasted:
+    query_image = decode_pasted_image(pasted)
+    if query_image is None:
+        st.warning('贴上的图片无法读取，或图片超过 12 MB。')
+if query_image is not None:
+    st.image(query_image, caption='待比对截图', width=260)
+    with st.spinner('正在比对数据库图片…'):
+        index = build_image_index()
+        ranked = rank_image_matches(query_image, index)
+    st.caption(f'v2 多区域搜索 · 已比对 {len(index)} 张有图片的游戏记录；缺图游戏不参与图片搜索。')
+    if not ranked:
+        st.warning('数据库中尚无可比对的图片。')
     else:
-        cols = st.columns(4)
-        for i, game in enumerate(filtered):
-            with cols[i % 4]:
+        st.subheader('最相似的 5 款游戏')
+        cols = st.columns(5)
+        for i, (score, game, matched_region) in enumerate(ranked):
+            with cols[i]:
                 path = safe_image_path(game)
                 if path:
                     st.image(str(path), use_container_width=True)
-                else:
-                    st.caption('暂无游戏图片')
-                st.subheader(str(game.get('name') or '未命名游戏'))
-                st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
-
-with image_tab:
-    st.write('将截图拖入下方上传框，或在贴图区域点击后按 **Command + V**（Windows：Ctrl + V）。')
-    uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key='reverse_upload')
-    paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
-    pasted = paste_component(key='clipboard_paste', default=None)
-    query_image = None
-    if uploaded is not None:
-        try:
-            query_image = Image.open(uploaded).copy()
-        except (OSError, UnidentifiedImageError):
-            st.error('上传文件不是有效图片。')
-    elif pasted:
-        query_image = decode_pasted_image(pasted)
-        if query_image is None:
-            st.warning('贴上的图片无法读取，或图片超过 12 MB。')
-    if query_image is not None:
-        st.image(query_image, caption='待比对截图', width=260)
-        with st.spinner('正在比对数据库图片…'):
-            index = build_image_index()
-            ranked = rank_image_matches(query_image, index)
-        st.caption(f'v2 多区域搜索 · 已比对 {len(index)} 张有图片的游戏记录；缺图游戏不参与图片搜索。')
-        if not ranked:
-            st.warning('数据库中尚无可比对的图片。')
-        else:
-            st.subheader('最相似的 5 款游戏')
-            cols = st.columns(5)
-            for i, (score, game, matched_region) in enumerate(ranked):
-                with cols[i]:
-                    path = safe_image_path(game)
-                    if path:
-                        st.image(str(path), use_container_width=True)
-                    st.markdown(f"**{i+1}. {game.get('name', '未命名游戏')}**")
-                    st.caption(f"厂商：{game.get('provider', '未知')}")
-                    st.caption(f"游戏 ID：{game.get('id', '无')}")
-                    st.caption(f'图片相似分数：{score * 100:.1f}/100')
-                    st.caption(f'比对区域：{matched_region}')
-            st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
-    else:
-        st.info('上传或贴上图片后，会自动显示最相似的 5 款游戏。')
+                st.markdown(f"**{i+1}. {game.get('name', '未命名游戏')}**")
+                st.caption(f"厂商：{game.get('provider', '未知')}")
+                st.caption(f"游戏 ID：{game.get('id', '无')}")
+                st.caption(f'图片相似分数：{score * 100:.1f}/100')
+                st.caption(f'比对区域：{matched_region}')
+        st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
+else:
+    st.info('上传或贴上图片后，会自动显示最相似的 5 款游戏。')

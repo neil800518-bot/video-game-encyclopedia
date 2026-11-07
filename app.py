@@ -58,9 +58,13 @@ for game in games:
 
     name = str(game.get("name", ""))
     game_provider = str(game.get("provider", ""))
+    game_id = str(game.get("id", ""))
 
-    if search.casefold() not in name.casefold():
-        continue
+if (
+    search.casefold() not in name.casefold()
+    and search.casefold() not in game_id.casefold()
+):
+    continue
 
     if provider != "全部厂商" and game_provider != provider:
         continue

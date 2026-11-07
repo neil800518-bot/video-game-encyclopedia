@@ -102,7 +102,7 @@
   {
     "id": "CG-0011",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_FBD492A16581487EBDF70A44A8D90230\",1)",
+    "name": "农场大亨",
     "image": "CG-0011.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -112,7 +112,7 @@
   {
     "id": "CG-0012",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_DB8FA4E43B4B4E29BC4450E4D8EEB53C\",1)",
+    "name": "亚特兰蒂斯",
     "image": "CG-0012.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -122,7 +122,7 @@
   {
     "id": "CG-0013",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_E17583A4EC0E4F4196484564A8D50E00\",1)",
+    "name": "传奇海盗王:黄金罗盘",
     "image": "CG-0013.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -132,7 +132,7 @@
   {
     "id": "CG-0014",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_238907F914FB47D49747903512F83E27\",1)",
+    "name": "荒野之王",
     "image": "CG-0014.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -142,7 +142,7 @@
   {
     "id": "CG-0015",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_E574D6D701F345AF878CA1FD39D9D721\",1)",
+    "name": "甜入心扉1000",
     "image": "CG-0015.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -152,7 +152,7 @@
   {
     "id": "CG-0016",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_C66A6F0CEE364947AC95CDAA86999C6D\",1)",
+    "name": "四川麻将:血战到底",
     "image": "CG-0016.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -162,7 +162,7 @@
   {
     "id": "CG-0017",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_FFEA880257E8471FB45660A6DF9D3D76\",1)",
+    "name": "象棋:一炮巡河",
     "image": "CG-0017.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -172,7 +172,7 @@
   {
     "id": "CG-0018",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_DEFFB2DC6249435C9AFB845C09C9709D\",1)",
+    "name": "妖怪食堂",
     "image": "CG-0018.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -182,7 +182,7 @@
   {
     "id": "CG-0019",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_B14243BEA40A4F949EC0C5B909E52EBD\",1)",
+    "name": "寻宝黄金国",
     "image": "CG-0019.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",
@@ -192,7 +192,7 @@
   {
     "id": "CG-0020",
     "provider": "CG",
-    "name": "=DISPIMG(\"ID_439F947240684859B3D8C04C56858F8F\",1)",
+    "name": "步步高升",
     "image": "CG-0020.jpg",
     "image_status": "已有图片",
     "source_sheet": "CG电子",

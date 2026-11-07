@@ -18,7 +18,6 @@ st.markdown('''<style>h1 {font-size: 2rem !important;} h2, h3 {font-size: 1.2rem
 st.title('🎮 电子游戏百科全书')
 st.caption('Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图')
 
-@st.cache_data(show_spinner=False)
 def load_games():
     if not DATA_FILE.is_file():
         return []

@@ -14,6 +14,7 @@ IMAGE_DIR = BASE_DIR / 'data' / 'images'
 PASTE_DIR = BASE_DIR / 'paste_component'
 
 st.set_page_config(page_title='电子游戏百科全书', page_icon='🎮', layout='wide')
+st.markdown('''<style>h1 {font-size: 2rem !important;} h2, h3 {font-size: 1.2rem !important;} @media (max-width: 640px) {h1 {font-size: 1.6rem !important;}}</style>''', unsafe_allow_html=True)
 st.title('🎮 电子游戏百科全书')
 st.caption('Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图')
 
@@ -136,11 +137,19 @@ def decode_pasted_image(data):
         return None
 
 
-st.subheader('🔍 名称 / ID 搜索')
-search = st.text_input('搜寻游戏', placeholder='输入游戏名称、厂商或游戏 ID，例如 CG-0010')
+left_col, right_col = st.columns(2, gap='large')
 games = load_games()
 providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('provider')})
-provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
+with left_col:
+    st.subheader('🔍 名称 / ID 搜索')
+    search = st.text_input('搜寻游戏', placeholder='输入游戏名称、厂商或游戏 ID，例如 CG-0010')
+    provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
+with right_col:
+    st.subheader('🖼️ 以图搜图')
+    st.caption('上传截图，或点击贴图框后按 Command + V（Windows：Ctrl + V）')
+    uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key='reverse_upload')
+    paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
+    pasted = paste_component(key='clipboard_paste', default=None)
 filtered = []
 for game in games:
     if provider != '全部厂商' and str(game.get('provider', '')) != provider:
@@ -149,12 +158,7 @@ for game in games:
     if search.casefold() not in ' '.join(terms).casefold():
         continue
     filtered.append(game)
-st.divider()
-st.subheader('🖼️ 以图搜图')
-st.write('将截图拖入下方上传框，或在贴图区域点击后按 **Command + V**（Windows：Ctrl + V）。')
-uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key='reverse_upload')
-paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
-pasted = paste_component(key='clipboard_paste', default=None)
+
 query_image = None
 if uploaded is not None:
     try:

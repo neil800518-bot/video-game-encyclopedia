@@ -103,101 +103,101 @@
     "id": "CG-0011",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_FBD492A16581487EBDF70A44A8D90230\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0011.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "A4",
-    "source_image_id": ""
+    "source_image_id": "ID_FBD492A16581487EBDF70A44A8D90230"
   },
   {
     "id": "CG-0012",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_DB8FA4E43B4B4E29BC4450E4D8EEB53C\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0012.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "B4",
-    "source_image_id": ""
+    "source_image_id": "ID_DB8FA4E43B4B4E29BC4450E4D8EEB53C"
   },
   {
     "id": "CG-0013",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_E17583A4EC0E4F4196484564A8D50E00\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0013.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "C4",
-    "source_image_id": ""
+    "source_image_id": "ID_E17583A4EC0E4F4196484564A8D50E00"
   },
   {
     "id": "CG-0014",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_238907F914FB47D49747903512F83E27\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0014.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "D4",
-    "source_image_id": ""
+    "source_image_id": "ID_238907F914FB47D49747903512F83E27"
   },
   {
     "id": "CG-0015",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_E574D6D701F345AF878CA1FD39D9D721\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0015.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "E4",
-    "source_image_id": ""
+    "source_image_id": "ID_E574D6D701F345AF878CA1FD39D9D721"
   },
   {
     "id": "CG-0016",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_C66A6F0CEE364947AC95CDAA86999C6D\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0016.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "F4",
-    "source_image_id": ""
+    "source_image_id": "ID_C66A6F0CEE364947AC95CDAA86999C6D"
   },
   {
     "id": "CG-0017",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_FFEA880257E8471FB45660A6DF9D3D76\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0017.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "G4",
-    "source_image_id": ""
+    "source_image_id": "ID_FFEA880257E8471FB45660A6DF9D3D76"
   },
   {
     "id": "CG-0018",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_DEFFB2DC6249435C9AFB845C09C9709D\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0018.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "H4",
-    "source_image_id": ""
+    "source_image_id": "ID_DEFFB2DC6249435C9AFB845C09C9709D"
   },
   {
     "id": "CG-0019",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_B14243BEA40A4F949EC0C5B909E52EBD\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0019.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "I4",
-    "source_image_id": ""
+    "source_image_id": "ID_B14243BEA40A4F949EC0C5B909E52EBD"
   },
   {
     "id": "CG-0020",
     "provider": "CG",
     "name": "=DISPIMG(\"ID_439F947240684859B3D8C04C56858F8F\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "image": "CG-0020.jpg",
+    "image_status": "已有图片",
     "source_sheet": "CG电子",
     "source_cell": "J4",
-    "source_image_id": ""
+    "source_image_id": "ID_439F947240684859B3D8C04C56858F8F"
   },
   {
     "id": "CG-0021",

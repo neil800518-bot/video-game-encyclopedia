@@ -26,6 +26,14 @@ def load_games():
     return [g for g in data if isinstance(g, dict)] if isinstance(data, list) else []
 
 
+def display_game_name(game):
+    """Never render spreadsheet image formulas as game titles."""
+    name = str(game.get('name') or '').strip()
+    if not name or name.upper().startswith('=DISPIMG('):
+        return '名稱待補'
+    return name
+
+
 def safe_image_path(game):
     name = str(game.get('image') or '')
     if not name or Path(name).name != name:
@@ -191,7 +199,7 @@ if query_image is not None:
                 path = safe_image_path(game)
                 if path:
                     st.image(str(path), use_container_width=True)
-                st.markdown(f"**{i+1}. {game.get('name', '未命名游戏')}**")
+                st.markdown(f"**{i+1}. {display_game_name(game)}**")
                 st.caption(f"厂商：{game.get('provider', '未知')}")
                 st.caption(f"游戏 ID：{game.get('id', '无')}")
                 st.caption(f'图片相似分数：{score * 100:.1f}/100')
@@ -220,8 +228,6 @@ else:
             path = safe_image_path(game)
             if path:
                 st.image(str(path), use_container_width=True)
-            else:
-                st.caption('暂无游戏图片')
-            st.subheader(str(game.get('name') or '未命名游戏'))
+            st.subheader(display_game_name(game))
             st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
 

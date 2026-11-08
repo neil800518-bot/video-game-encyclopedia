@@ -35,11 +35,23 @@ def display_game_name(game):
 
 
 def safe_image_path(game):
-    name = str(game.get('image') or '')
-    if not name or Path(name).name != name:
+    # Prefer the image explicitly linked in the database.
+    name = str(game.get('image') or '').strip()
+    if name and Path(name).name == name:
+        path = IMAGE_DIR / name
+        if path.is_file():
+            return path
+
+    # Older imported records may have an empty image field even when
+    # their ID-named image has already been uploaded.
+    game_id = str(game.get('id') or '').strip()
+    if not game_id or Path(game_id).name != game_id or game_id in ('.', '..'):
         return None
-    path = IMAGE_DIR / name
-    return path if path.is_file() else None
+    for extension in ('.jpg', '.jpeg', '.png', '.webp'):
+        path = IMAGE_DIR / f'{game_id}{extension}'
+        if path.is_file():
+            return path
+    return None
 
 
 def prepare_image(img):

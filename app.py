@@ -206,9 +206,17 @@ st.write(f'共找到 {len(filtered)} 款游戏')
 if not filtered:
     st.info('目前没有符合条件的游戏。')
 else:
-    cols = st.columns(4)
+    items_per_row = st.radio(
+        '每列顯示筆數',
+        options=[5, 10],
+        index=0,
+        horizontal=True,
+        format_func=lambda count: f'每列 {count} 筆',
+        key='search_results_columns',
+    )
+    cols = st.columns(items_per_row)
     for i, game in enumerate(filtered):
-        with cols[i % 4]:
+        with cols[i % items_per_row]:
             path = safe_image_path(game)
             if path:
                 st.image(str(path), use_container_width=True)

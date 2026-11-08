@@ -2,6 +2,7 @@ import base64
 import io
 import json
 from pathlib import Path
+from html import escape
 
 import numpy as np
 import streamlit as st
@@ -58,6 +59,16 @@ def prepare_image(img):
     img = ImageOps.exif_transpose(img).convert('RGB')
     img.thumbnail((900, 900))
     return img
+
+
+def display_card_image(path):
+    """Use a consistent portrait canvas without cropping the original image."""
+    with Image.open(path) as source:
+        image = ImageOps.exif_transpose(source).convert('RGB')
+        image.thumbnail((240, 320), Image.Resampling.LANCZOS)
+        canvas = Image.new('RGB', (240, 320), 'white')
+        canvas.paste(image, ((240 - image.width) // 2, (320 - image.height) // 2))
+    st.image(canvas, use_container_width=True)
 
 
 def image_features(img):
@@ -210,7 +221,7 @@ if query_image is not None:
             with cols[i]:
                 path = safe_image_path(game)
                 if path:
-                    st.image(str(path), use_container_width=True)
+                    display_card_image(path)
                 st.markdown(f"**{i+1}. {display_game_name(game)}**")
                 st.caption(f"厂商：{game.get('provider', '未知')}")
                 st.caption(f"游戏 ID：{game.get('id', '无')}")
@@ -243,7 +254,12 @@ else:
             with col:
                 path = safe_image_path(game)
                 if path:
-                    st.image(str(path), use_container_width=True)
-                st.markdown(f"**{display_game_name(game)}**")
-                st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
+                    display_card_image(path)
+                st.markdown(
+                    f'<div style="min-height:3.2em;font-weight:600;overflow-wrap:anywhere">' 
+                    f'{escape(display_game_name(game))}</div>',
+                    unsafe_allow_html=True,
+                )
+                st.caption(f"厂商：{game.get('provider', '未知')}")
+                st.caption(f"ID：{game.get('id', '无')}")
 

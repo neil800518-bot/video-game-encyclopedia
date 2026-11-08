@@ -255,11 +255,17 @@ else:
                 path = safe_image_path(game)
                 if path:
                     display_card_image(path)
+                # Keep the title and metadata in one HTML block so Streamlit
+                # does not insert large vertical gaps between captions.
                 st.markdown(
-                    f'<div style="min-height:3.2em;font-weight:600;overflow-wrap:anywhere">' 
-                    f'{escape(display_game_name(game))}</div>',
+                    '<div style="padding-top:4px;padding-bottom:8px;">'
+                    f'<div style="min-height:2.5em;line-height:1.25;font-weight:600;'
+                    f'overflow-wrap:anywhere;">{escape(display_game_name(game))}</div>'
+                    f'<div style="font-size:0.78rem;color:gray;line-height:1.35;">'
+                    f'厂商：{escape(str(game.get("provider", "未知")))}</div>'
+                    f'<div style="font-size:0.78rem;color:gray;line-height:1.35;">'
+                    f'ID：{escape(str(game.get("id", "无")))}</div>'
+                    '</div>',
                     unsafe_allow_html=True,
                 )
-                st.caption(f"厂商：{game.get('provider', '未知')}")
-                st.caption(f"ID：{game.get('id', '无')}")
 

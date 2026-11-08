@@ -11002,9 +11002,9 @@
   {
     "id": "DB-0011",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_D2E54F2345F0412CB4B8E8D15C782472\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "深海探宝",
+    "image": "DB-0011.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "A4",
     "source_image_id": ""
@@ -11012,9 +11012,9 @@
   {
     "id": "DB-0012",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_D90C94FE5AB44413A3527205FF84FB0A\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "麻将来了2",
+    "image": "DB-0012.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "B4",
     "source_image_id": ""
@@ -11022,9 +11022,9 @@
   {
     "id": "DB-0013",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_4006F3C8E006459DA51D39CF3CC9893A\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "维加斯火箭",
+    "image": "DB-0013.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "C4",
     "source_image_id": ""
@@ -11032,9 +11032,9 @@
   {
     "id": "DB-0014",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_03B14C7CEF0C40119A9D50F7E5D52903\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "冰与火之歌",
+    "image": "DB-0014.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "D4",
     "source_image_id": ""
@@ -11042,9 +11042,9 @@
   {
     "id": "DB-0015",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_85D3ABCC90BA4944AA1FCCC3769CD896\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "博雅刮刮乐",
+    "image": "DB-0015.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "E4",
     "source_image_id": ""
@@ -11052,9 +11052,9 @@
   {
     "id": "DB-0016",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_B41CB56C306043829ABC6625C51AF037\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "麻将来了3",
+    "image": "DB-0016.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "F4",
     "source_image_id": ""
@@ -11062,9 +11062,9 @@
   {
     "id": "DB-0017",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_8079495885EE40D6824FC0034C017777\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "盗墓笔记",
+    "image": "DB-0017.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "G4",
     "source_image_id": ""
@@ -11072,9 +11072,9 @@
   {
     "id": "DB-0018",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_088A9331330D4A1A950A70B6CF65250C\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "九线拉王",
+    "image": "DB-0018.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "H4",
     "source_image_id": ""
@@ -11082,9 +11082,9 @@
   {
     "id": "DB-0019",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_1F7E5F4FBF814E8EAEC73C582D2CDD11\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "水浒Q传",
+    "image": "DB-0019.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "I4",
     "source_image_id": ""
@@ -11092,9 +11092,9 @@
   {
     "id": "DB-0020",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_20B0F30C28EE43409B89F12967C9DDDA\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "金吉报喜",
+    "image": "DB-0020.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "J4",
     "source_image_id": ""
@@ -11202,9 +11202,9 @@
   {
     "id": "DB-0031",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_1CC5D45698B74BEAA1CFF5B70FF9C060\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "龙之财富",
+    "image": "DB-0031.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "A10",
     "source_image_id": ""
@@ -11212,9 +11212,9 @@
   {
     "id": "DB-0032",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_384F6ACFFF6049889B525D8C9D2D4547\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "钻石永恒",
+    "image": "DB-0032.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "B10",
     "source_image_id": ""
@@ -11222,9 +11222,9 @@
   {
     "id": "DB-0033",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_BF21959FB8D4410A81FC49A991A750DA\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "经典拉霸2",
+    "image": "DB-0033.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "C10",
     "source_image_id": ""
@@ -11232,9 +11232,9 @@
   {
     "id": "DB-0034",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_C653CD96D4874F32BF954DAAFB501F69\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "八宝黄龙",
+    "image": "DB-0034.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "D10",
     "source_image_id": ""
@@ -11242,9 +11242,9 @@
   {
     "id": "DB-0035",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_DFCD03BF8510498788BBDE777558DEB9\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "大富大贵",
+    "image": "DB-0035.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "E10",
     "source_image_id": ""
@@ -11252,9 +11252,9 @@
   {
     "id": "DB-0036",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_C1B572C04B724F218553DECC1E013B5A\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "多福多财街机版",
+    "image": "DB-0036.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "F10",
     "source_image_id": ""
@@ -11262,9 +11262,9 @@
   {
     "id": "DB-0037",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_E11E5DE3DE6D414A847E8908618722F6\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "疯狂小玛莉",
+    "image": "DB-0037.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "G10",
     "source_image_id": ""
@@ -11272,9 +11272,9 @@
   {
     "id": "DB-0038",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_BA5FF0C7449848EA9A400386711F07CB\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "财神到",
+    "image": "DB-0038.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "H10",
     "source_image_id": ""
@@ -11282,9 +11282,9 @@
   {
     "id": "DB-0039",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_D3FBE195A9514D3BA66A5BB2D347DE7B\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "百万金轮",
+    "image": "DB-0039.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "I10",
     "source_image_id": ""
@@ -11292,9 +11292,9 @@
   {
     "id": "DB-0040",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_CEBE1B0F71DE474E985A3E0A8CAF6C62\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "黄金矿工",
+    "image": "DB-0040.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "J10",
     "source_image_id": ""
@@ -11402,9 +11402,9 @@
   {
     "id": "DB-0051",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_C369271D78FA46B5BFC0968EABB71ED8\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "特洛伊木马",
+    "image": "DB-0051.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "A16",
     "source_image_id": ""
@@ -11412,9 +11412,9 @@
   {
     "id": "DB-0052",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_8B63222F5A80466B9D997091638948D8\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "森林舞会",
+    "image": "DB-0052.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "B16",
     "source_image_id": ""
@@ -11422,9 +11422,9 @@
   {
     "id": "DB-0053",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_3DBA497BDCA74523ADB1CB277F6302C4\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "赤壁之战",
+    "image": "DB-0053.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "C16",
     "source_image_id": ""
@@ -11432,9 +11432,9 @@
   {
     "id": "DB-0054",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_0DA66AC79B1B4B528870EB98431F1049\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "金色道龙",
+    "image": "DB-0054.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "D16",
     "source_image_id": ""
@@ -11442,9 +11442,9 @@
   {
     "id": "DB-0055",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_35FAF268E1864440906B14283F13039A\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "龙凤呈祥",
+    "image": "DB-0055.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "E16",
     "source_image_id": ""
@@ -11452,9 +11452,9 @@
   {
     "id": "DB-0056",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_24179D2F32CD40CDB364A49EF3B2858F\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "摇钱树",
+    "image": "DB-0056.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "F16",
     "source_image_id": ""
@@ -11462,9 +11462,9 @@
   {
     "id": "DB-0057",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_D9BB80B008F74640B175722C7FEC6D4F\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "大闹天宫",
+    "image": "DB-0057.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "G16",
     "source_image_id": ""
@@ -11472,9 +11472,9 @@
   {
     "id": "DB-0058",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_3B7407A895E04CDC8E8BADCD251E89E1\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "神灯传说",
+    "image": "DB-0058.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "H16",
     "source_image_id": ""
@@ -11482,9 +11482,9 @@
   {
     "id": "DB-0059",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_D271127F2AF14DB89E27001B046E34C8\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "深夜食堂",
+    "image": "DB-0059.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "I16",
     "source_image_id": ""
@@ -11492,9 +11492,9 @@
   {
     "id": "DB-0060",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_B2A716EBFF254EFDB4D4D121420683D6\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "功夫熊猫",
+    "image": "DB-0060.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "J16",
     "source_image_id": ""
@@ -11602,9 +11602,9 @@
   {
     "id": "DB-0071",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_1AD4849830804D7A8372A81DA6C682D5\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "牛气冲天",
+    "image": "DB-0071.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "A22",
     "source_image_id": ""
@@ -11612,9 +11612,9 @@
   {
     "id": "DB-0072",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_F540C4D4C49C4EB1B95B8D0B33CAF4F7\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "王国纪元",
+    "image": "DB-0072.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "B22",
     "source_image_id": ""
@@ -11622,9 +11622,9 @@
   {
     "id": "DB-0073",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_2686B3CFFA404435888CBAA7B386C3CB\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "遗迹探险",
+    "image": "DB-0073.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "C22",
     "source_image_id": ""
@@ -11632,9 +11632,9 @@
   {
     "id": "DB-0074",
     "provider": "DB",
-    "name": "=DISPIMG(\"ID_000D9A3F2A0A40DBB75B8D3BE3E82696\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "植物大战僵尸",
+    "image": "DB-0074.jpg",
+    "image_status": "已有图片",
     "source_sheet": "DB电子",
     "source_cell": "D22",
     "source_image_id": ""

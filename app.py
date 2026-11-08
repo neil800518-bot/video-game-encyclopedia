@@ -234,12 +234,16 @@ else:
         format_func=lambda count: f'每列 {count} 筆',
         key='search_results_columns',
     )
-    cols = st.columns(items_per_row)
-    for i, game in enumerate(filtered):
-        with cols[i % items_per_row]:
-            path = safe_image_path(game)
-            if path:
-                st.image(str(path), use_container_width=True)
-            st.subheader(display_game_name(game))
-            st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
+    # Build a fresh set of columns for each row. Reusing the same columns
+    # makes Streamlit stack each column independently and misalign cards.
+    for row_start in range(0, len(filtered), items_per_row):
+        row_games = filtered[row_start:row_start + items_per_row]
+        cols = st.columns(items_per_row, gap='small')
+        for col, game in zip(cols, row_games):
+            with col:
+                path = safe_image_path(game)
+                if path:
+                    st.image(str(path), use_container_width=True)
+                st.markdown(f"**{display_game_name(game)}**")
+                st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
 

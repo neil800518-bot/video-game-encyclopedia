@@ -65,6 +65,8 @@ DB_IMAGE_ROTATIONS = {
     'DB-0017': 90,
     'DB-0018': 90,
     'DB-0019': 90,
+    'DB-0024': 90,
+    'DB-0028': 90,
 }
 
 def oriented_game_image(source, game):
@@ -72,7 +74,7 @@ def oriented_game_image(source, game):
     image = ImageOps.exif_transpose(source).convert('RGB')
     if str(game.get('provider', '')).strip() == 'DB':
         angle = DB_IMAGE_ROTATIONS.get(str(game.get('id', '')).strip(), 0)
-        if angle and image.width > image.height:
+        if angle:
             image = image.rotate(angle, expand=True)
     return image
 

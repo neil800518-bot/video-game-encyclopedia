@@ -79,14 +79,27 @@ def oriented_game_image(source, game):
     return image
 
 
-def display_card_image(path, game=None):
-    """Use a consistent portrait canvas without cropping the original image."""
-    with Image.open(path) as source:
-        image = oriented_game_image(source, game or {})
+@st.cache_data(show_spinner=False, max_entries=3000)
+def cached_card_image(path_string, provider, game_id, file_mtime_ns):
+    """Cache the display thumbnail; file mtime invalidates replaced images."""
+    with Image.open(path_string) as source:
+        image = oriented_game_image(source, {'provider': provider, 'id': game_id})
         image.thumbnail((240, 320), Image.Resampling.LANCZOS)
         canvas = Image.new('RGB', (240, 320), 'white')
         canvas.paste(image, ((240 - image.width) // 2, (320 - image.height) // 2))
-    st.image(canvas, use_container_width=True)
+        output = io.BytesIO()
+        canvas.save(output, format='PNG')
+        return output.getvalue()
+
+
+def display_card_image(path, game=None):
+    """Use cached portrait thumbnails without changing original images."""
+    game = game or {}
+    st.image(
+        cached_card_image(str(path), str(game.get('provider', '')),
+                          str(game.get('id', '')), path.stat().st_mtime_ns),
+        use_container_width=True,
+    )
 
 
 def image_features(img):
@@ -194,6 +207,12 @@ providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('
 st.markdown("""
 <style>
 .block-container {max-width: 1500px; padding-top: 1.4rem;}
+/* Hide Streamlit's stale elements while a new widget state is rendering. */
+[data-stale="true"] { display: none !important; }
+[data-stale="true"] * { animation: none !important; transition: none !important; }
+/* Prevent delayed exit fades from leaving outdated search text visible. */
+[data-testid="stVerticalBlock"] [data-stale="true"],
+[data-testid="stElementContainer"][data-stale="true"] { display: none !important; }
 div[data-testid="stVerticalBlockBorderWrapper"] {border-radius: 14px;}
 </style>
 """, unsafe_allow_html=True)

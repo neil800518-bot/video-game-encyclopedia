@@ -11742,9 +11742,9 @@
   {
     "id": "PA-0011",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_FD756E19425D4D348CA8810BF5FB35A1\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "猛龙传奇",
+    "image": "PA-0011.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "A4",
     "source_image_id": ""
@@ -11752,9 +11752,9 @@
   {
     "id": "PA-0012",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_5BEB8BAEDA324EE19A03D84610570BD1\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "水果拉霸",
+    "image": "PA-0012.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "B4",
     "source_image_id": ""
@@ -11762,9 +11762,9 @@
   {
     "id": "PA-0013",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_47088D8CDCC14579A715743D82567B81\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "日本武士",
+    "image": "PA-0013.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "C4",
     "source_image_id": ""
@@ -11772,9 +11772,9 @@
   {
     "id": "PA-0014",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_5D9AB890862E4897B607CEB9F6A9CFFB\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "魅惑魔女",
+    "image": "PA-0014.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "D4",
     "source_image_id": ""
@@ -11782,9 +11782,9 @@
   {
     "id": "PA-0015",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_EBABA9E7900E4B278276259D4858E1BF\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "水果拉霸2",
+    "image": "PA-0015.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "E4",
     "source_image_id": ""
@@ -11792,9 +11792,9 @@
   {
     "id": "PA-0016",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_B0BE1DCC5CC84F4FB4E954BEEE020D26\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "豪华金拉霸",
+    "image": "PA-0016.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "F4",
     "source_image_id": ""
@@ -11802,9 +11802,9 @@
   {
     "id": "PA-0017",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_7DC1B17FC2F4403BAD278592A8A37B04\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "肉蒲团",
+    "image": "PA-0017.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "G4",
     "source_image_id": ""
@@ -11812,9 +11812,9 @@
   {
     "id": "PA-0018",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_CF51745956404332A3C2C32FCA11E5D9\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "功夫传奇",
+    "image": "PA-0018.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "H4",
     "source_image_id": ""
@@ -11822,9 +11822,9 @@
   {
     "id": "PA-0019",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_ABC9FA49659F4B80B1A63DB046460EF2\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "武财神",
+    "image": "PA-0019.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "I4",
     "source_image_id": ""
@@ -11832,9 +11832,9 @@
   {
     "id": "PA-0020",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_4BBAF9E30C174BF98C1F2F1539FE7964\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "神奇宝石",
+    "image": "PA-0020.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "J4",
     "source_image_id": ""
@@ -11942,9 +11942,9 @@
   {
     "id": "PA-0031",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_A1A6E5DB84184465AF949D34015392F1\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "财气冲天",
+    "image": "PA-0031.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "A10",
     "source_image_id": ""
@@ -11952,9 +11952,9 @@
   {
     "id": "PA-0032",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_1A375359BF9A4E8696E8E701E303CEFD\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "美人鱼",
+    "image": "PA-0032.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "B10",
     "source_image_id": ""
@@ -11962,9 +11962,9 @@
   {
     "id": "PA-0033",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_DEC28EB6E61849B7AFFEB3C5C7911D65\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "飞禽走兽拉霸",
+    "image": "PA-0033.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "C10",
     "source_image_id": ""
@@ -11972,9 +11972,9 @@
   {
     "id": "PA-0034",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_F53EBB9B399C493A87469E48E52C8283\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "宾果拉霸",
+    "image": "PA-0034.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "D10",
     "source_image_id": ""
@@ -11982,9 +11982,9 @@
   {
     "id": "PA-0035",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_BC58A6E4F05644C9BD89E9EF06256E18\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "包租婆",
+    "image": "PA-0035.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "E10",
     "source_image_id": ""
@@ -11992,9 +11992,9 @@
   {
     "id": "PA-0036",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_39548D2E9971467FA9B8D5AA12F4267C\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "王牌狂徒",
+    "image": "PA-0036.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "F10",
     "source_image_id": ""
@@ -12002,9 +12002,9 @@
   {
     "id": "PA-0037",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_FEC04E77C7B14E8B9E3E62D75C3BCA1A\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "巨龙宝藏",
+    "image": "PA-0037.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "G10",
     "source_image_id": ""
@@ -12012,9 +12012,9 @@
   {
     "id": "PA-0038",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_48A681AD950249B4AB6FAE98E36A49A0\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "摔跤英雄",
+    "image": "PA-0038.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "H10",
     "source_image_id": ""
@@ -12022,9 +12022,9 @@
   {
     "id": "PA-0039",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_67EA66670B8541B58C0710979AB4CFF5\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "胡桃夹子",
+    "image": "PA-0039.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "I10",
     "source_image_id": ""
@@ -12032,9 +12032,9 @@
   {
     "id": "PA-0040",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_4F01290EBD6E4B518978BDA3B723CCB6\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "奪寶船奇",
+    "image": "PA-0040.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "J10",
     "source_image_id": ""
@@ -12142,9 +12142,9 @@
   {
     "id": "PA-0051",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_E01FFA1A29B1478A9EE97084C3567A7A\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "和风剧院",
+    "image": "PA-0051.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "A16",
     "source_image_id": ""
@@ -12152,9 +12152,9 @@
   {
     "id": "PA-0052",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_B6881BC51C72473FAC9C7930631F77A4\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "点石成金",
+    "image": "PA-0052.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "B16",
     "source_image_id": ""
@@ -12162,9 +12162,9 @@
   {
     "id": "PA-0053",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_5051166695DC4F3CA3F537C53B368CB5\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "封神演义",
+    "image": "PA-0053.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "C16",
     "source_image_id": ""
@@ -12172,9 +12172,9 @@
   {
     "id": "PA-0054",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_1769723FBC5A4318BB5F3FD232C8D9FC\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "五狮进宝",
+    "image": "PA-0054.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "D16",
     "source_image_id": ""
@@ -12182,9 +12182,9 @@
   {
     "id": "PA-0055",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_700C01DA231B451AB29717FD4D6C216B\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "圣女贞德",
+    "image": "PA-0055.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "E16",
     "source_image_id": ""
@@ -12192,9 +12192,9 @@
   {
     "id": "PA-0056",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_BD1C7F87BB1E490489F8B996FC730B46\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "发财熊猫",
+    "image": "PA-0056.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "F16",
     "source_image_id": ""
@@ -12202,9 +12202,9 @@
   {
     "id": "PA-0057",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_2B565B26BBA4483BBCD50D9CB368350C\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "招财锦鲤",
+    "image": "PA-0057.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "G16",
     "source_image_id": ""
@@ -12212,9 +12212,9 @@
   {
     "id": "PA-0058",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_1C9F4F9EA2564FD1A83B40E8B5628433\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "十二生肖",
+    "image": "PA-0058.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "H16",
     "source_image_id": ""
@@ -12222,9 +12222,9 @@
   {
     "id": "PA-0059",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_DF6D6F4209844409912622C5B1ECF61F\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "葫芦兄弟",
+    "image": "PA-0059.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "I16",
     "source_image_id": ""
@@ -12232,9 +12232,9 @@
   {
     "id": "PA-0060",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_2EF7BE95582242C78D3F3F1C677BD788\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "贪玩蓝月",
+    "image": "PA-0060.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "J16",
     "source_image_id": ""
@@ -12342,9 +12342,9 @@
   {
     "id": "PA-0071",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_A8BDE3936729486988D9CC42D1768160\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "战火风云",
+    "image": "PA-0071.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "A22",
     "source_image_id": ""
@@ -12352,9 +12352,9 @@
   {
     "id": "PA-0072",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_479D41C8E0634761B0D00547BDC55127\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "亚瑟王",
+    "image": "PA-0072.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "B22",
     "source_image_id": ""
@@ -12362,9 +12362,9 @@
   {
     "id": "PA-0073",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_04BC0DDDF2AF454A957A47CA92C299FF\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "穆夏女神",
+    "image": "PA-0073.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "C22",
     "source_image_id": ""
@@ -12372,9 +12372,9 @@
   {
     "id": "PA-0074",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_AC95F97DB9CB45C6B5D1F11B07F77205\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "冠军足球",
+    "image": "PA-0074.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "D22",
     "source_image_id": ""
@@ -12382,9 +12382,9 @@
   {
     "id": "PA-0075",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_1DCE78D02F874E34A17135BD5E14E976\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "开心农场",
+    "image": "PA-0075.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "E22",
     "source_image_id": ""
@@ -12392,9 +12392,9 @@
   {
     "id": "PA-0076",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_3B6D6BA5B73D45918CBB9ACA42B405E5\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "王者传说",
+    "image": "PA-0076.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "F22",
     "source_image_id": ""
@@ -12402,9 +12402,9 @@
   {
     "id": "PA-0077",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_FC95CDCEB23E49028AB9E6B2ED0DAAC4\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "阿里巴巴",
+    "image": "PA-0077.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "G22",
     "source_image_id": ""
@@ -12412,9 +12412,9 @@
   {
     "id": "PA-0078",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_83AAC7AC4C3B45F7933B943DCB675A11\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "XIN哥来了",
+    "image": "PA-0078.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "H22",
     "source_image_id": ""
@@ -12422,9 +12422,9 @@
   {
     "id": "PA-0079",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_30A621F4D498428E83C83E7EC745416F\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "街头烈战",
+    "image": "PA-0079.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "I22",
     "source_image_id": ""
@@ -12432,9 +12432,9 @@
   {
     "id": "PA-0080",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_1A1AF41288A04254A883D2589945D363\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "美女大格斗",
+    "image": "PA-0080.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "J22",
     "source_image_id": ""
@@ -12542,9 +12542,9 @@
   {
     "id": "PA-0091",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_7BC941A0ABD3401F9C278D8E48F7CBAA\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "幸运8",
+    "image": "PA-0091.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "A28",
     "source_image_id": ""
@@ -12552,9 +12552,9 @@
   {
     "id": "PA-0092",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_A87A64AB593D43F4995B45FD9F7DBC71\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "闪亮女郎",
+    "image": "PA-0092.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "B28",
     "source_image_id": ""
@@ -12562,9 +12562,9 @@
   {
     "id": "PA-0093",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_B9757A61A20C4ABEB061F76876C5D3EF\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "金鱼",
+    "image": "PA-0093.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "C28",
     "source_image_id": ""
@@ -12572,9 +12572,9 @@
   {
     "id": "PA-0094",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_3A9E57DF61F242DC9D01A30F6D49C039\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "中国新年",
+    "image": "PA-0094.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "D28",
     "source_image_id": ""
@@ -12582,9 +12582,9 @@
   {
     "id": "PA-0095",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_43589BE3D0C1435CB0E09AA24B0B7EE2\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "海盗王",
+    "image": "PA-0095.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "E28",
     "source_image_id": ""
@@ -12592,9 +12592,9 @@
   {
     "id": "PA-0096",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_5905D62B10084A28B45D2ABD48539873\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "鲜果狂热",
+    "image": "PA-0096.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "F28",
     "source_image_id": ""
@@ -12602,9 +12602,9 @@
   {
     "id": "PA-0097",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_8EA4D3786004479E974996C3CBCC8F12\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "小熊猫",
+    "image": "PA-0097.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "G28",
     "source_image_id": ""
@@ -12612,9 +12612,9 @@
   {
     "id": "PA-0098",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_10F87FB37F474D45BD9AD2EA43667EF0\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "大豪客",
+    "image": "PA-0098.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "H28",
     "source_image_id": ""
@@ -12622,9 +12622,9 @@
   {
     "id": "PA-0099",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_7DD0449F616B4B78AF66012AEEC61E5E\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "灵猴献瑞",
+    "image": "PA-0099.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "I28",
     "source_image_id": ""
@@ -12632,9 +12632,9 @@
   {
     "id": "PA-0100",
     "provider": "PA",
-    "name": "=DISPIMG(\"ID_7CFF78A7CA8347D7BC4D491DCF60CFAF\",1)",
-    "image": "",
-    "image_status": "待补图片",
+    "name": "象棋老虎机",
+    "image": "PA-0100.jpg",
+    "image_status": "已有图片",
     "source_sheet": "PA电子",
     "source_cell": "J28",
     "source_image_id": ""

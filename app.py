@@ -61,10 +61,26 @@ def prepare_image(img):
     return img
 
 
-def display_card_image(path):
+DB_IMAGE_ROTATIONS = {
+    'DB-0017': 90,
+    'DB-0018': 90,
+    'DB-0019': 90,
+}
+
+def oriented_game_image(source, game):
+    """Apply reviewed DB-only orientation overrides; retain original image files."""
+    image = ImageOps.exif_transpose(source).convert('RGB')
+    if str(game.get('provider', '')).strip() == 'DB':
+        angle = DB_IMAGE_ROTATIONS.get(str(game.get('id', '')).strip(), 0)
+        if angle and image.width > image.height:
+            image = image.rotate(angle, expand=True)
+    return image
+
+
+def display_card_image(path, game=None):
     """Use a consistent portrait canvas without cropping the original image."""
     with Image.open(path) as source:
-        image = ImageOps.exif_transpose(source).convert('RGB')
+        image = oriented_game_image(source, game or {})
         image.thumbnail((240, 320), Image.Resampling.LANCZOS)
         canvas = Image.new('RGB', (240, 320), 'white')
         canvas.paste(image, ((240 - image.width) // 2, (320 - image.height) // 2))
@@ -109,7 +125,7 @@ def build_image_index():
             continue
         try:
             with Image.open(path) as image:
-                features = image_features(image)
+                features = image_features(oriented_game_image(image, game))
             entries.append((game, features))
         except (OSError, ValueError, UnidentifiedImageError):
             continue
@@ -221,7 +237,7 @@ if query_image is not None:
             with cols[i]:
                 path = safe_image_path(game)
                 if path:
-                    display_card_image(path)
+                    display_card_image(path, game)
                 st.markdown(f"**{i+1}. {display_game_name(game)}**")
                 st.caption(f"厂商：{game.get('provider', '未知')}")
                 st.caption(f"游戏 ID：{game.get('id', '无')}")
@@ -256,7 +272,7 @@ else:
                 with st.container(border=True):
                     path = safe_image_path(game)
                     if path:
-                        display_card_image(path)
+                        display_card_image(path, game)
                     st.markdown(
                         '<div style="padding:2px 0 4px;">'
                         f'<div style="min-height:2.5em;line-height:1.25;font-weight:600;'

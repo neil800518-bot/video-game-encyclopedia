@@ -79,14 +79,27 @@ def oriented_game_image(source, game):
     return image
 
 
-def display_card_image(path, game=None):
-    """Use a consistent portrait canvas without cropping the original image."""
-    with Image.open(path) as source:
-        image = oriented_game_image(source, game or {})
+@st.cache_data(show_spinner=False, max_entries=3000)
+def cached_card_image(path_string, provider, game_id, file_mtime_ns):
+    """Cache the display thumbnail; file mtime invalidates replaced images."""
+    with Image.open(path_string) as source:
+        image = oriented_game_image(source, {'provider': provider, 'id': game_id})
         image.thumbnail((240, 320), Image.Resampling.LANCZOS)
         canvas = Image.new('RGB', (240, 320), 'white')
         canvas.paste(image, ((240 - image.width) // 2, (320 - image.height) // 2))
-    st.image(canvas, use_container_width=True)
+        output = io.BytesIO()
+        canvas.save(output, format='PNG')
+        return output.getvalue()
+
+
+def display_card_image(path, game=None):
+    """Use cached portrait thumbnails without changing original images."""
+    game = game or {}
+    st.image(
+        cached_card_image(str(path), str(game.get('provider', '')),
+                          str(game.get('id', '')), path.stat().st_mtime_ns),
+        use_container_width=True,
+    )
 
 
 def image_features(img):
@@ -194,6 +207,12 @@ providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('
 st.markdown("""
 <style>
 .block-container {max-width: 1500px; padding-top: 1.4rem;}
+/* Hide Streamlit's stale elements while a new widget state is rendering. */
+[data-stale="true"] { display: none !important; }
+[data-stale="true"] * { animation: none !important; transition: none !important; }
+/* Prevent delayed exit fades from leaving outdated search text visible. */
+[data-testid="stVerticalBlock"] [data-stale="true"],
+[data-testid="stElementContainer"][data-stale="true"] { display: none !important; }
 div[data-testid="stVerticalBlockBorderWrapper"] {border-radius: 14px;}
 </style>
 """, unsafe_allow_html=True)
@@ -208,14 +227,17 @@ with search_col:
         uploaded = None
         pasted = None
         if search_mode == '以图搜图':
-            st.markdown('**上传游戏截图**')
+            title_col, clear_col = st.columns([2.1, 1], gap='small', vertical_alignment='center')
+            with title_col:
+                st.markdown('**上传游戏截图**')
+            with clear_col:
+                if st.button('🗑️ 清除图片', key='clear_search_image', use_container_width=True):
+                    st.session_state.image_input_version += 1
+                    st.rerun()
             uploaded = st.file_uploader('拖放 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key=f'reverse_upload_{st.session_state.image_input_version}')
             st.caption('正式版保留上传与贴图 · 点击下方区域后按 Command + V（Windows：Ctrl + V）')
             paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
             pasted = paste_component(key=f'clipboard_paste_{st.session_state.image_input_version}', default=None)
-            if st.button('🗑️ 清除图片', key='clear_search_image'):
-                st.session_state.image_input_version += 1
-                st.rerun()
         else:
             search = st.text_input('游戏名称 / ID', placeholder='输入游戏名称、厂商或 ID')
         provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
@@ -260,21 +282,29 @@ with result_col:
                     st.warning('数据库中尚无可比对的图片。')
                 else:
                     st.markdown(f'**最相似的 {len(ranked)} 款游戏**')
-                    for start in range(0, len(ranked), 2):
-                        cols = st.columns(2, gap='small')
-                        for offset, (score, game, matched_region) in enumerate(ranked[start:start+2]):
-                            with cols[offset]:
-                                with st.container(border=True):
-                                    pic, details = st.columns([1, 2], gap='small')
-                                    with pic:
-                                        path = safe_image_path(game)
-                                        if path:
-                                            display_card_image(path, game)
-                                    with details:
-                                        st.markdown(f'**{start+offset+1}. {display_game_name(game)}**')
-                                        st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
-                                        st.markdown(f'**相似分数：{score * 100:.1f}/100**')
-                                        st.caption(f'比对区域：{matched_region}')
+                    # Rank one is centered for both top-3 and top-5 modes.
+                    for start in range(len(ranked)):
+                        if start == 0:
+                            _, center, _ = st.columns([1, 2, 1], gap='small')
+                            target = center
+                        elif start % 2 == 1:
+                            pair_cols = st.columns(2, gap='small')
+                            target = pair_cols[0]
+                        else:
+                            target = pair_cols[1]
+                        score, game, matched_region = ranked[start]
+                        with target:
+                            with st.container(border=True):
+                                pic, details = st.columns([1, 2], gap='small')
+                                with pic:
+                                    path = safe_image_path(game)
+                                    if path:
+                                        display_card_image(path, game)
+                                with details:
+                                    st.markdown(f'**{start+1}. {display_game_name(game)}**')
+                                    st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
+                                    st.markdown(f'**相似分数：{score * 100:.1f}/100**')
+                                    st.caption(f'比对区域：{matched_region}')
                     st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
         else:
             st.subheader('名称 / ID 搜寻结果')
@@ -284,7 +314,7 @@ with result_col:
             elif not filtered:
                 st.info('目前没有符合条件的游戏。')
             else:
-                items_per_row = st.radio('每列显示笔数', [5, 10], horizontal=True, format_func=lambda n: f'每列 {n} 笔', key='search_results_columns')
+                items_per_row = 5
                 for row_start in range(0, len(filtered), items_per_row):
                     cols = st.columns(items_per_row, gap='small')
                     for col, game in zip(cols, filtered[row_start:row_start+items_per_row]):

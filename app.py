@@ -229,7 +229,7 @@ for game in games:
     if provider != '全部厂商' and str(game.get('provider', '')) != provider:
         continue
     terms = [str(game.get(k, '')) for k in ('name', 'id', 'provider')]
-    if search.casefold() not in ' '.join(terms).casefold():
+    if search_mode == '名称 / ID 搜寻' and search.strip() and search.casefold() not in ' '.join(terms).casefold():
         continue
     filtered.append(game)
 
@@ -278,8 +278,10 @@ with result_col:
                     st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
         else:
             st.subheader('名称 / ID 搜寻结果')
-            st.caption(f'共找到 {len(filtered)} 款游戏')
-            if not filtered:
+            st.caption(f'共找到 {len(filtered) if search.strip() else 0} 款游戏')
+            if not search.strip():
+                st.info('请输入游戏名称或 ID，右侧将显示符合条件的游戏。')
+            elif not filtered:
                 st.info('目前没有符合条件的游戏。')
             else:
                 items_per_row = st.radio('每列显示笔数', [5, 10], horizontal=True, format_func=lambda n: f'每列 {n} 笔', key='search_results_columns')
@@ -294,3 +296,28 @@ with result_col:
                                 st.markdown(f'**{display_game_name(game)}**')
                                 st.caption(f"厂商：{game.get('provider', '未知')}")
                                 st.caption(f"ID：{game.get('id', '无')}")
+
+# Keep the original complete gallery below both search modes.
+# Search results above never replace the browsing gallery.
+st.divider()
+st.subheader('游戏图片总览')
+gallery_games = [
+    game for game in games
+    if provider == '全部厂商' or str(game.get('provider', '')) == provider
+]
+st.caption(f'共 {len(gallery_games)} 款游戏')
+gallery_per_row = st.radio(
+    '每列显示笔数', [5, 10], horizontal=True,
+    format_func=lambda n: f'每列 {n} 笔', key='gallery_columns',
+)
+for row_start in range(0, len(gallery_games), gallery_per_row):
+    gallery_cols = st.columns(gallery_per_row, gap='small')
+    for col, game in zip(gallery_cols, gallery_games[row_start:row_start + gallery_per_row]):
+        with col:
+            with st.container(border=True):
+                path = safe_image_path(game)
+                if path:
+                    display_card_image(path, game)
+                st.markdown(f'**{display_game_name(game)}**')
+                st.caption(f"厂商：{game.get('provider', '未知')}")
+                st.caption(f"ID：{game.get('id', '无')}")

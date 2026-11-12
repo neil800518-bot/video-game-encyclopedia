@@ -189,22 +189,41 @@ def decode_pasted_image(data):
 if 'image_input_version' not in st.session_state:
     st.session_state.image_input_version = 0
 
-left_col, right_col = st.columns(2, gap='large')
 games = load_games()
 providers = sorted({str(g.get('provider', '')).strip() for g in games if g.get('provider')})
-with left_col:
-    st.subheader('🔍 名称 / ID 搜索')
-    search = st.text_input('搜寻游戏', placeholder='输入游戏名称、厂商或游戏 ID，例如 CG-0010')
-    provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
-with right_col:
-    st.subheader('🖼️ 以图搜图')
-    st.caption('上传截图，或点击贴图框后按 Command + V（Windows：Ctrl + V）')
-    uploaded = st.file_uploader('拖拉 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key=f'reverse_upload_{st.session_state.image_input_version}')
-    paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
-    pasted = paste_component(key=f'clipboard_paste_{st.session_state.image_input_version}', default=None)
-    if st.button('🗑️ 清除圖片', key='clear_search_image'):
-        st.session_state.image_input_version += 1
-        st.rerun()
+st.markdown("""
+<style>
+.block-container {max-width: 1500px; padding-top: 1.4rem;}
+div[data-testid="stVerticalBlockBorderWrapper"] {border-radius: 14px;}
+</style>
+""", unsafe_allow_html=True)
+
+search_col, result_col = st.columns([1, 2], gap='medium')
+with search_col:
+    with st.container(border=True):
+        st.subheader('搜寻方式')
+        search_mode = st.radio('选择搜寻方式', ['以图搜图', '名称 / ID 搜寻'], label_visibility='collapsed')
+        st.divider()
+        search = ''
+        uploaded = None
+        pasted = None
+        if search_mode == '以图搜图':
+            st.markdown('**上传游戏截图**')
+            uploaded = st.file_uploader('拖放 / 选择游戏截图', type=['png', 'jpg', 'jpeg', 'webp'], key=f'reverse_upload_{st.session_state.image_input_version}')
+            st.caption('正式版保留上传与贴图 · 点击下方区域后按 Command + V（Windows：Ctrl + V）')
+            paste_component = components.declare_component('game_image_paste_v1', path=str(PASTE_DIR))
+            pasted = paste_component(key=f'clipboard_paste_{st.session_state.image_input_version}', default=None)
+            if st.button('🗑️ 清除图片', key='clear_search_image'):
+                st.session_state.image_input_version += 1
+                st.rerun()
+        else:
+            search = st.text_input('游戏名称 / ID', placeholder='输入游戏名称、厂商或 ID')
+        provider = st.selectbox('游戏厂商', ['全部厂商'] + providers)
+        if search_mode == '以图搜图':
+            result_limit = st.radio('显示比对结果', [3, 5], format_func=lambda n: f'前 {n} 名', horizontal=True)
+        else:
+            result_limit = 5
+
 filtered = []
 for game in games:
     if provider != '全部厂商' and str(game.get('provider', '')) != provider:
@@ -224,66 +243,54 @@ elif pasted:
     query_image = decode_pasted_image(pasted)
     if query_image is None:
         st.warning('贴上的图片无法读取，或图片超过 12 MB。')
-if query_image is not None:
-    st.image(query_image, caption='待比对截图', width=260)
-    with st.spinner('正在比对数据库图片…'):
-        index = build_image_index()
-        ranked = rank_image_matches(query_image, index)
-    st.caption(f'v2 多区域搜索 · 已比对 {len(index)} 张有图片的游戏记录；缺图游戏不参与图片搜索。')
-    if not ranked:
-        st.warning('数据库中尚无可比对的图片。')
-    else:
-        st.subheader('最相似的 5 款游戏')
-        cols = st.columns(5)
-        for i, (score, game, matched_region) in enumerate(ranked):
-            with cols[i]:
-                path = safe_image_path(game)
-                if path:
-                    display_card_image(path, game)
-                st.markdown(f"**{i+1}. {display_game_name(game)}**")
-                st.caption(f"厂商：{game.get('provider', '未知')}")
-                st.caption(f"游戏 ID：{game.get('id', '无')}")
-                st.caption(f'图片相似分数：{score * 100:.1f}/100')
-                st.caption(f'比对区域：{matched_region}')
-        st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
-else:
-    st.info('上传或贴上图片后，会自动显示最相似的 5 款游戏。')
 
-st.divider()
-st.subheader('📚 名称 / ID 搜索结果')
-st.write(f'共找到 {len(filtered)} 款游戏')
-if not filtered:
-    st.info('目前没有符合条件的游戏。')
-else:
-    items_per_row = st.radio(
-        '每列顯示筆數',
-        options=[5, 10],
-        index=0,
-        horizontal=True,
-        format_func=lambda count: f'每列 {count} 筆',
-        key='search_results_columns',
-    )
-    # Build a fresh set of columns for each row. Reusing the same columns
-    # makes Streamlit stack each column independently and misalign cards.
-    for row_start in range(0, len(filtered), items_per_row):
-        row_games = filtered[row_start:row_start + items_per_row]
-        cols = st.columns(items_per_row, gap='small')
-        for col, game in zip(cols, row_games):
-            with col:
-                # A separate bordered card keeps each image and its labels together.
-                with st.container(border=True):
-                    path = safe_image_path(game)
-                    if path:
-                        display_card_image(path, game)
-                    st.markdown(
-                        '<div style="padding:2px 0 4px;">'
-                        f'<div style="min-height:2.5em;line-height:1.25;font-weight:600;'
-                        f'text-align:center;overflow-wrap:anywhere;">'
-                        f'{escape(display_game_name(game))}</div>'
-                        f'<div style="font-size:0.78rem;color:gray;line-height:1.35;">'
-                        f'厂商：{escape(str(game.get("provider", "未知")))}</div>'
-                        f'<div style="font-size:0.78rem;color:gray;line-height:1.35;">'
-                        f'ID：{escape(str(game.get("id", "无")))}</div>'
-                        '</div>',
-                        unsafe_allow_html=True,
-                    )
+with result_col:
+    with st.container(border=True):
+        if search_mode == '以图搜图':
+            st.subheader('图片比对结果')
+            if query_image is None:
+                st.info('上传或贴上图片后，会自动显示最相似的游戏。')
+            else:
+                st.image(query_image, caption='待比对截图', width=180)
+                with st.spinner('正在比对数据库图片…'):
+                    index = build_image_index()
+                    ranked = rank_image_matches(query_image, index, limit=result_limit)
+                st.caption(f'v2 多区域搜索 · 已比对 {len(index)} 张有图片的游戏记录；缺图游戏不参与图片搜索。')
+                if not ranked:
+                    st.warning('数据库中尚无可比对的图片。')
+                else:
+                    st.markdown(f'**最相似的 {len(ranked)} 款游戏**')
+                    for start in range(0, len(ranked), 2):
+                        cols = st.columns(2, gap='small')
+                        for offset, (score, game, matched_region) in enumerate(ranked[start:start+2]):
+                            with cols[offset]:
+                                with st.container(border=True):
+                                    pic, details = st.columns([1, 2], gap='small')
+                                    with pic:
+                                        path = safe_image_path(game)
+                                        if path:
+                                            display_card_image(path, game)
+                                    with details:
+                                        st.markdown(f'**{start+offset+1}. {display_game_name(game)}**')
+                                        st.caption(f"厂商：{game.get('provider', '未知')} · ID：{game.get('id', '无')}")
+                                        st.markdown(f'**相似分数：{score * 100:.1f}/100**')
+                                        st.caption(f'比对区域：{matched_region}')
+                    st.info('相似分数不是身份确认概率；截图经过裁切、缩放或遮挡时，可能出现误判。')
+        else:
+            st.subheader('名称 / ID 搜寻结果')
+            st.caption(f'共找到 {len(filtered)} 款游戏')
+            if not filtered:
+                st.info('目前没有符合条件的游戏。')
+            else:
+                items_per_row = st.radio('每列显示笔数', [5, 10], horizontal=True, format_func=lambda n: f'每列 {n} 笔', key='search_results_columns')
+                for row_start in range(0, len(filtered), items_per_row):
+                    cols = st.columns(items_per_row, gap='small')
+                    for col, game in zip(cols, filtered[row_start:row_start+items_per_row]):
+                        with col:
+                            with st.container(border=True):
+                                path = safe_image_path(game)
+                                if path:
+                                    display_card_image(path, game)
+                                st.markdown(f'**{display_game_name(game)}**')
+                                st.caption(f"厂商：{game.get('provider', '未知')}")
+                                st.caption(f"ID：{game.get('id', '无')}")

@@ -1035,15 +1035,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-gallery_selected_providers = st.multiselect(
-    '总览游戏厂商',
-    options=providers,
-    default=[],
-    placeholder='全部厂商（可复选）',
-    help='仅筛选下方游戏图片总览，不影响以图搜图与名称 / ID 搜寻。',
-    key='gallery_selected_providers',
-)
-
+# Keep gallery filtering separate from image and name/ID searches.
+gallery_selected_providers = st.session_state.get('gallery_selected_providers', [])
 gallery_games = [
     game
     for game in games
@@ -1067,6 +1060,68 @@ gallery_per_row = st.radio(
     horizontal=True,
     format_func=lambda n: f'每列 {n} 笔',
     key='gallery_columns',
+)
+
+# Place the compact multi-select below the per-row control.
+gallery_filter_col, gallery_filter_space = st.columns([1, 3], gap='small')
+with gallery_filter_col:
+    gallery_selected_providers = st.multiselect(
+        '总览游戏厂商',
+        options=providers,
+        default=[],
+        placeholder='全部厂商（可复选）',
+        help='仅筛选下方游戏图片总览，不影响以图搜图与名称 / ID 搜寻。',
+        key='gallery_selected_providers',
+    )
+
+# Persist scroll position across Streamlit reruns triggered by gallery filters.
+# The browser-side listener is installed once and only watches this widget.
+components.html(
+    """
+    <script>
+    (() => {
+        const win = window.parent;
+        const doc = win.document;
+        const storageKey = 'game-gallery-filter-scroll';
+        const scrollEl = () => doc.querySelector('[data-testid="stAppScrollContainer"]')
+            || doc.querySelector('section.main')
+            || doc.scrollingElement;
+        if (!win.__gameGalleryScrollGuard) {
+            const state = { pending: false };
+            win.__gameGalleryScrollGuard = state;
+            doc.addEventListener('pointerdown', (event) => {
+                if (!event.target.closest('[class*="st-key-gallery_selected_providers"]')) return;
+                const el = scrollEl();
+                if (!el) return;
+                win.sessionStorage.setItem(storageKey, String(el.scrollTop));
+                state.pending = true;
+            }, true);
+            doc.addEventListener('keydown', (event) => {
+                if (!event.target.closest('[class*="st-key-gallery_selected_providers"]')) return;
+                const el = scrollEl();
+                if (!el) return;
+                win.sessionStorage.setItem(storageKey, String(el.scrollTop));
+                state.pending = true;
+            }, true);
+        }
+        const stored = win.sessionStorage.getItem(storageKey);
+        if (stored !== null) {
+            const target = Number(stored);
+            if (Number.isFinite(target)) {
+                const restore = () => {
+                    const el = scrollEl();
+                    if (el) el.scrollTop = target;
+                };
+                restore();
+                win.requestAnimationFrame(restore);
+                win.setTimeout(restore, 120);
+            }
+            win.sessionStorage.removeItem(storageKey);
+        }
+    })();
+    </script>
+    """,
+    height=0,
 )
 
 for row_start in range(

@@ -960,211 +960,192 @@ with result_col:
                                 )
 
 
-# ============================================================
-# Original complete game gallery.
-# ============================================================
+@st.fragment
+def render_game_gallery():
+    # ============================================================
+    # Original complete game gallery.
+    # ============================================================
 
-st.divider()
-st.markdown(
-    """
-    <style>
-    .gallery-heading {
-        display: flex;
-        align-items: baseline;
-        gap: 14px;
-        flex-wrap: wrap;
-        margin-bottom: 0.4rem;
-    }
-    .gallery-heading-title { font-size: 1.2rem; font-weight: 700; }
-    .gallery-heading-count { color: #808080; font-size: 0.88rem; }
-    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlock"] {
-        gap: 0.4rem;
-    }
-    [class*="st-key-gallery_card_"] .gallery-game-name {
-        font-weight: 700;
-        font-size: 0.95rem;
-        line-height: 1.4;
-        height: 2.8em;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
-        overflow: hidden;
-        overflow-wrap: anywhere;
-        cursor: help;
-    }
-    [class*="st-key-gallery_card_"] .gallery-name-wrap {
-        position: relative;
-        overflow: visible;
-        z-index: 1;
-    }
-    [class*="st-key-gallery_card_"] .gallery-name-wrap:hover,
-    [class*="st-key-gallery_card_"] .gallery-name-wrap:focus-within {
-        z-index: 1000;
-    }
-    [class*="st-key-gallery_card_"] .gallery-name-wrap:hover::after,
-    [class*="st-key-gallery_card_"] .gallery-name-wrap:focus-within::after {
-        content: attr(data-full-name);
-        position: absolute;
-        left: 0;
-        bottom: calc(100% + 6px);
-        width: max-content;
-        max-width: min(340px, 80vw);
-        white-space: normal;
-        overflow-wrap: anywhere;
-        padding: 8px 10px;
-        border-radius: 6px;
-        background: #262626;
-        color: #fff;
-        font-size: 0.85rem;
-        font-weight: 400;
-        line-height: 1.5;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-        pointer-events: none;
-        z-index: 1001;
-    }
-    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlock"],
-    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
-        overflow: visible;
-    }
-    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
-        height: 100%;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Gallery filter is independent from image and name/ID search.
-# Use a rerun flag so only a provider change triggers scroll restoration.
-def on_gallery_provider_change():
-    st.session_state['gallery_restore_position'] = True
-
-
-gallery_selected_providers = st.session_state.get('gallery_selected_providers', [])
-gallery_games = [
-    game for game in games
-    if not gallery_selected_providers
-    or str(game.get('provider', '')).strip() in gallery_selected_providers
-]
-
-st.markdown(
-    '<div class="gallery-heading">'
-    '<span class="gallery-heading-title">游戏图片总览</span>'
-    f'<span class="gallery-heading-count">共 {len(gallery_games)} 款游戏</span>'
-    '</div>',
-    unsafe_allow_html=True,
-)
-
-gallery_per_row = st.radio(
-    '每列显示笔数',
-    [5, 10],
-    horizontal=True,
-    format_func=lambda n: f'每列 {n} 笔',
-    key='gallery_columns',
-)
-
-# Approximately the same width as the name/ID provider selector.
-gallery_filter_col, gallery_filter_space = st.columns([1, 2], gap='small')
-with gallery_filter_col:
-    gallery_selected_providers = st.multiselect(
-        '总览游戏厂商',
-        options=providers,
-        default=[],
-        placeholder='全部厂商（可复选）',
-        help='仅筛选下方游戏图片总览，不影响以图搜图与名称 / ID 搜寻。',
-        key='gallery_selected_providers',
-        on_change=on_gallery_provider_change,
-    )
-
-# Allow selected provider tags to wrap to multiple rows instead of clipping.
-st.markdown(
-    """
-    <style>
-    [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div {
-        height: auto !important;
-        min-height: 40px;
-        overflow: visible !important;
-    }
-    [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] [class*="valueContainer"] {
-        flex-wrap: wrap !important;
-        overflow: visible !important;
-        max-height: none !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Restore the gallery control to view after a selection changes.
-# Anchoring to the control avoids invalid scroll offsets when filtering
-# dramatically reduces the number of gallery rows.
-if st.session_state.pop('gallery_restore_position', False):
-    components.html(
+    st.divider()
+    st.markdown(
         """
-        <script>
-        (() => {
-            const win = window.parent;
-            const doc = win.document;
-            const selector = '[class*="st-key-gallery_selected_providers"]';
-            const restore = () => {
-                const target = doc.querySelector(selector);
-                const scroll = doc.querySelector('[data-testid="stAppScrollContainer"]')
-                    || doc.querySelector('section.main') || doc.scrollingElement;
-                if (!target || !scroll) return;
-                const top = target.getBoundingClientRect().top
-                    - scroll.getBoundingClientRect().top + scroll.scrollTop - 180;
-                scroll.scrollTo({top: Math.max(0, top), behavior: 'instant'});
-            };
-            win.requestAnimationFrame(restore);
-            win.setTimeout(restore, 100);
-            win.setTimeout(restore, 300);
-        })();
-        </script>
+        <style>
+        .gallery-heading {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 0.4rem;
+        }
+        .gallery-heading-title { font-size: 1.2rem; font-weight: 700; }
+        .gallery-heading-count { color: #808080; font-size: 0.88rem; }
+        [class*="st-key-gallery_card_"] [data-testid="stVerticalBlock"] {
+            gap: 0.4rem;
+        }
+        [class*="st-key-gallery_card_"] .gallery-game-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            height: 2.8em;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            cursor: help;
+        }
+        [class*="st-key-gallery_card_"] .gallery-name-wrap {
+            position: relative;
+            overflow: visible;
+            z-index: 1;
+        }
+        [class*="st-key-gallery_card_"] .gallery-name-wrap:hover,
+        [class*="st-key-gallery_card_"] .gallery-name-wrap:focus-within {
+            z-index: 1000;
+        }
+        [class*="st-key-gallery_card_"] .gallery-name-wrap:hover::after,
+        [class*="st-key-gallery_card_"] .gallery-name-wrap:focus-within::after {
+            content: attr(data-full-name);
+            position: absolute;
+            left: 0;
+            bottom: calc(100% + 6px);
+            width: max-content;
+            max-width: min(340px, 80vw);
+            white-space: normal;
+            overflow-wrap: anywhere;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: #262626;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 400;
+            line-height: 1.5;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            pointer-events: none;
+            z-index: 1001;
+        }
+        [class*="st-key-gallery_card_"] [data-testid="stVerticalBlock"],
+        [class*="st-key-gallery_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
+            overflow: visible;
+        }
+        [class*="st-key-gallery_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
+            height: 100%;
+        }
+        </style>
         """,
-        height=0,
+        unsafe_allow_html=True,
     )
 
-for row_start in range(
-    0,
-    len(gallery_games),
-    gallery_per_row,
-):
-    gallery_cols = st.columns(
+    gallery_selected_providers = st.session_state.get('gallery_selected_providers', [])
+    gallery_games = [
+        game for game in games
+        if not gallery_selected_providers
+        or str(game.get('provider', '')).strip() in gallery_selected_providers
+    ]
+
+    st.markdown(
+        '<div class="gallery-heading">'
+        '<span class="gallery-heading-title">游戏图片总览</span>'
+        f'<span class="gallery-heading-count">共 {len(gallery_games)} 款游戏</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    gallery_per_row = st.radio(
+        '每列显示笔数',
+        [5, 10],
+        horizontal=True,
+        format_func=lambda n: f'每列 {n} 笔',
+        key='gallery_columns',
+    )
+
+    gallery_filter_col, gallery_filter_space = st.columns([1, 2], gap='small')
+    with gallery_filter_col:
+        gallery_selected_providers = st.multiselect(
+            '总览游戏厂商',
+            options=providers,
+            default=[],
+            placeholder='全部厂商（可复选）',
+            help='仅筛选下方游戏图片总览，不影响以图搜图与名称 / ID 搜寻。',
+            key='gallery_selected_providers',
+        )
+
+    st.markdown(
+        """
+        <style>
+        /* Streamlit BaseWeb multi-select: wrap chips instead of horizontal scrolling. */
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            height: auto !important;
+            min-height: 40px !important;
+            max-height: none !important;
+            overflow: visible !important;
+            align-content: flex-start !important;
+        }
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div > div:first-child {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            gap: 3px !important;
+        }
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="tag"] {
+            flex-shrink: 0 !important;
+            max-width: 100% !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    for row_start in range(
+        0,
+        len(gallery_games),
         gallery_per_row,
-        gap='small',
-    )
+    ):
+        gallery_cols = st.columns(
+            gallery_per_row,
+            gap='small',
+        )
 
-    for card_index, (col, game) in enumerate(zip(
-        gallery_cols,
-        gallery_games[
-            row_start:
-            row_start + gallery_per_row
-        ],
-    )):
-        with col:
-            with st.container(border=True, key=f'gallery_card_{row_start}_{card_index}'):
-                path = safe_image_path(game)
+        for card_index, (col, game) in enumerate(zip(
+            gallery_cols,
+            gallery_games[
+                row_start:
+                row_start + gallery_per_row
+            ],
+        )):
+            with col:
+                with st.container(border=True, key=f'gallery_card_{row_start}_{card_index}'):
+                    path = safe_image_path(game)
 
-                if path:
-                    display_card_image(
-                        path,
-                        game,
+                    if path:
+                        display_card_image(
+                            path,
+                            game,
+                        )
+
+                    full_name = escape(display_game_name(game), quote=True)
+                    st.markdown(
+                        f'<div class="gallery-name-wrap" data-full-name="{full_name}">'
+                        f'<div class="gallery-game-name" tabindex="0">'
+                        f'{full_name}</div></div>',
+                        unsafe_allow_html=True,
                     )
 
-                full_name = escape(display_game_name(game), quote=True)
-                st.markdown(
-                    f'<div class="gallery-name-wrap" data-full-name="{full_name}">'
-                    f'<div class="gallery-game-name" tabindex="0">'
-                    f'{full_name}</div></div>',
-                    unsafe_allow_html=True,
-                )
+                    st.caption(
+                        f"厂商："
+                        f"{game.get('provider', '未知')}"
+                    )
 
-                st.caption(
-                    f"厂商："
-                    f"{game.get('provider', '未知')}"
-                )
+                    st.caption(
+                        f"ID：{game.get('id', '无')}"
+                    )
 
-                st.caption(
-                    f"ID：{game.get('id', '无')}"
-                )
+
+render_game_gallery()

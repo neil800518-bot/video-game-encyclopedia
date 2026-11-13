@@ -814,12 +814,86 @@ with result_col:
                     )
 
         else:
-            st.subheader('名称 / ID 搜寻结果')
-
-            st.caption(
-                f'共找到 '
-                f'{len(filtered) if search.strip() else 0}'
-                f' 款游戏'
+            st.markdown(
+                """
+                <style>
+                .search-results-heading {
+                    display: flex;
+                    align-items: baseline;
+                    gap: 14px;
+                    flex-wrap: wrap;
+                    margin-bottom: 0.65rem;
+                }
+                .search-results-heading-title {
+                    font-size: 1.2rem;
+                    font-weight: 700;
+                }
+                .search-results-heading-count {
+                    color: #808080;
+                    font-size: 0.88rem;
+                }
+                [class*="st-key-search_card_"] [data-testid="stVerticalBlock"] {
+                    gap: 0.4rem;
+                    overflow: visible;
+                }
+                [class*="st-key-search_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
+                    height: 100%;
+                    overflow: visible;
+                }
+                [class*="st-key-search_card_"] .search-game-name {
+                    font-weight: 700;
+                    font-size: 0.95rem;
+                    line-height: 1.4;
+                    height: 2.8em;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    line-clamp: 2;
+                    overflow: hidden;
+                    overflow-wrap: anywhere;
+                    cursor: help;
+                }
+                [class*="st-key-search_card_"] .search-name-wrap {
+                    position: relative;
+                    overflow: visible;
+                    z-index: 1;
+                }
+                [class*="st-key-search_card_"] .search-name-wrap:hover,
+                [class*="st-key-search_card_"] .search-name-wrap:focus-within {
+                    z-index: 1000;
+                }
+                [class*="st-key-search_card_"] .search-name-wrap:hover::after,
+                [class*="st-key-search_card_"] .search-name-wrap:focus-within::after {
+                    content: attr(data-full-name);
+                    position: absolute;
+                    left: 0;
+                    bottom: calc(100% + 6px);
+                    width: max-content;
+                    max-width: min(340px, 80vw);
+                    white-space: normal;
+                    overflow-wrap: anywhere;
+                    padding: 8px 10px;
+                    border-radius: 6px;
+                    background: #262626;
+                    color: #fff;
+                    font-size: 0.85rem;
+                    font-weight: 400;
+                    line-height: 1.5;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+                    pointer-events: none;
+                    z-index: 1001;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
+            result_count = len(filtered) if search.strip() else 0
+            st.markdown(
+                '<div class="search-results-heading">'
+                '<span class="search-results-heading-title">名称 / ID 搜寻结果</span>'
+                f'<span class="search-results-heading-count">共找到 {result_count} 款游戏</span>'
+                '</div>',
+                unsafe_allow_html=True,
             )
 
             if not search.strip():
@@ -846,15 +920,15 @@ with result_col:
                         gap='small',
                     )
 
-                    for col, game in zip(
+                    for card_index, (col, game) in enumerate(zip(
                         cols,
                         filtered[
                             row_start:
                             row_start + items_per_row
                         ],
-                    ):
+                    )):
                         with col:
-                            with st.container(border=True):
+                            with st.container(border=True, key=f'search_card_{row_start}_{card_index}'):
                                 path = safe_image_path(game)
 
                                 if path:
@@ -863,8 +937,12 @@ with result_col:
                                         game,
                                     )
 
+                                full_name = escape(display_game_name(game), quote=True)
                                 st.markdown(
-                                    f'**{display_game_name(game)}**'
+                                    f'<div class="search-name-wrap" data-full-name="{full_name}">'
+                                    f'<div class="search-game-name" tabindex="0">'
+                                    f'{full_name}</div></div>',
+                                    unsafe_allow_html=True,
                                 )
 
                                 st.caption(

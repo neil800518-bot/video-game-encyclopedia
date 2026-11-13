@@ -29,6 +29,19 @@ st.markdown(
     @media (max-width: 640px) {
         h1 {font-size: 1.6rem !important;}
     }
+    /* Search panel: compact spacing and red horizontal selector. */
+    .st-key-search_panel [data-testid="stVerticalBlock"] { gap: 0.55rem; }
+    .st-key-search_panel [data-testid="stSegmentedControl"] { width: 100%; }
+    .st-key-search_panel [data-testid="stSegmentedControl"] button {
+        flex: 1 1 0; justify-content: center; min-height: 2.5rem;
+    }
+    .st-key-search_panel [data-testid="stSegmentedControl"] button[aria-checked="true"],
+    .st-key-search_panel [data-testid="stSegmentedControl"] button[aria-pressed="true"],
+    .st-key-search_panel [data-testid="stSegmentedControl"] button[data-state="checked"] {
+        background-color: #d32f42 !important;
+        border-color: #d32f42 !important;
+        color: #fff !important;
+    }
     </style>
     ''',
     unsafe_allow_html=True,
@@ -554,16 +567,23 @@ search_col, result_col = st.columns(
 )
 
 with search_col:
-    with st.container(border=True):
+    with st.container(border=True, key='search_panel'):
         st.subheader('搜寻方式')
 
-        search_mode = st.radio(
+        search_mode = st.segmented_control(
             '选择搜寻方式',
             ['以图搜图', '名称 / ID 搜寻'],
+            default='以图搜图',
+            selection_mode='single',
             label_visibility='collapsed',
-        )
+            key='search_mode_switch',
+        ) or '以图搜图'
 
-        st.divider()
+        st.markdown(
+            '<div style="border-top:1px solid #e5e7eb;'
+            'margin:0.1rem 0 0.25rem"></div>',
+            unsafe_allow_html=True,
+        )
 
         search = ''
         uploaded = None

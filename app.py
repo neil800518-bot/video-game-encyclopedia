@@ -646,9 +646,13 @@ with search_col:
                 placeholder='输入游戏名称、厂商或 ID',
             )
 
-        provider = st.selectbox(
+        selected_providers = st.multiselect(
             '游戏厂商',
-            ['全部厂商'] + providers,
+            options=providers,
+            default=[],
+            placeholder='全部厂商（可复选）',
+            help='不选择表示全部厂商；可同时选择多个厂商，点击选项旁的 × 可取消。',
+            key='selected_game_providers',
         )
 
         if search_mode == '以图搜图':
@@ -666,8 +670,8 @@ filtered = []
 
 for game in games:
     if (
-        provider != '全部厂商'
-        and str(game.get('provider', '')) != provider
+        selected_providers
+        and str(game.get('provider', '')).strip() not in selected_providers
     ):
         continue
 
@@ -726,6 +730,13 @@ with result_col:
 
                 with st.spinner('正在比对数据库图片…'):
                     index = build_image_index()
+                    if selected_providers:
+                        index = [
+                            (game, features)
+                            for game, features in index
+                            if str(game.get('provider', '')).strip()
+                            in selected_providers
+                        ]
 
                     ranked = rank_image_matches(
                         query_image,

@@ -1035,15 +1035,17 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Keep gallery filtering separate from image and name/ID searches.
+# Gallery filter is independent from image and name/ID search.
+# Use a rerun flag so only a provider change triggers scroll restoration.
+def on_gallery_provider_change():
+    st.session_state['gallery_restore_position'] = True
+
+
 gallery_selected_providers = st.session_state.get('gallery_selected_providers', [])
 gallery_games = [
-    game
-    for game in games
-    if (
-        not gallery_selected_providers
-        or str(game.get('provider', '')).strip() in gallery_selected_providers
-    )
+    game for game in games
+    if not gallery_selected_providers
+    or str(game.get('provider', '')).strip() in gallery_selected_providers
 ]
 
 st.markdown(
@@ -1062,8 +1064,8 @@ gallery_per_row = st.radio(
     key='gallery_columns',
 )
 
-# Place the compact multi-select below the per-row control.
-gallery_filter_col, gallery_filter_space = st.columns([1, 3], gap='small')
+# Approximately the same width as the name/ID provider selector.
+gallery_filter_col, gallery_filter_space = st.columns([1, 2], gap='small')
 with gallery_filter_col:
     gallery_selected_providers = st.multiselect(
         '总览游戏厂商',
@@ -1072,57 +1074,56 @@ with gallery_filter_col:
         placeholder='全部厂商（可复选）',
         help='仅筛选下方游戏图片总览，不影响以图搜图与名称 / ID 搜寻。',
         key='gallery_selected_providers',
+        on_change=on_gallery_provider_change,
     )
 
-# Persist scroll position across Streamlit reruns triggered by gallery filters.
-# The browser-side listener is installed once and only watches this widget.
-components.html(
+# Allow selected provider tags to wrap to multiple rows instead of clipping.
+st.markdown(
     """
-    <script>
-    (() => {
-        const win = window.parent;
-        const doc = win.document;
-        const storageKey = 'game-gallery-filter-scroll';
-        const scrollEl = () => doc.querySelector('[data-testid="stAppScrollContainer"]')
-            || doc.querySelector('section.main')
-            || doc.scrollingElement;
-        if (!win.__gameGalleryScrollGuard) {
-            const state = { pending: false };
-            win.__gameGalleryScrollGuard = state;
-            doc.addEventListener('pointerdown', (event) => {
-                if (!event.target.closest('[class*="st-key-gallery_selected_providers"]')) return;
-                const el = scrollEl();
-                if (!el) return;
-                win.sessionStorage.setItem(storageKey, String(el.scrollTop));
-                state.pending = true;
-            }, true);
-            doc.addEventListener('keydown', (event) => {
-                if (!event.target.closest('[class*="st-key-gallery_selected_providers"]')) return;
-                const el = scrollEl();
-                if (!el) return;
-                win.sessionStorage.setItem(storageKey, String(el.scrollTop));
-                state.pending = true;
-            }, true);
-        }
-        const stored = win.sessionStorage.getItem(storageKey);
-        if (stored !== null) {
-            const target = Number(stored);
-            if (Number.isFinite(target)) {
-                const restore = () => {
-                    const el = scrollEl();
-                    if (el) el.scrollTop = target;
-                };
-                restore();
-                win.requestAnimationFrame(restore);
-                win.setTimeout(restore, 120);
-            }
-            win.sessionStorage.removeItem(storageKey);
-        }
-    })();
-    </script>
+    <style>
+    [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div {
+        height: auto !important;
+        min-height: 40px;
+        overflow: visible !important;
+    }
+    [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] [class*="valueContainer"] {
+        flex-wrap: wrap !important;
+        overflow: visible !important;
+        max-height: none !important;
+    }
+    </style>
     """,
-    height=0,
+    unsafe_allow_html=True,
 )
+
+# Restore the gallery control to view after a selection changes.
+# Anchoring to the control avoids invalid scroll offsets when filtering
+# dramatically reduces the number of gallery rows.
+if st.session_state.pop('gallery_restore_position', False):
+    components.html(
+        """
+        <script>
+        (() => {
+            const win = window.parent;
+            const doc = win.document;
+            const selector = '[class*="st-key-gallery_selected_providers"]';
+            const restore = () => {
+                const target = doc.querySelector(selector);
+                const scroll = doc.querySelector('[data-testid="stAppScrollContainer"]')
+                    || doc.querySelector('section.main') || doc.scrollingElement;
+                if (!target || !scroll) return;
+                const top = target.getBoundingClientRect().top
+                    - scroll.getBoundingClientRect().top + scroll.scrollTop - 180;
+                scroll.scrollTo({top: Math.max(0, top), behavior: 'instant'});
+            };
+            win.requestAnimationFrame(restore);
+            win.setTimeout(restore, 100);
+            win.setTimeout(restore, 300);
+        })();
+        </script>
+        """,
+        height=0,
+    )
 
 for row_start in range(
     0,

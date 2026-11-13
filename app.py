@@ -47,8 +47,39 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.title('🎮 电子游戏百科全书')
-st.caption('Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图')
+st.markdown(
+    """
+    <style>
+    .encyclopedia-header {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        column-gap: 1.15rem;
+        row-gap: 0.25rem;
+        margin: 0.1rem 0 1.15rem;
+    }
+    .encyclopedia-header .main-title {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.35;
+        color: inherit;
+    }
+    .encyclopedia-header .subtitle {
+        color: #777;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    @media (max-width: 640px) {
+        .encyclopedia-header .main-title { font-size: 1.6rem; }
+    }
+    </style>
+    <div class="encyclopedia-header">
+        <span class="main-title">🎮 电子游戏百科全书</span>
+        <span class="subtitle">Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 def load_games():

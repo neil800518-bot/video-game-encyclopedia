@@ -49,7 +49,7 @@ st.markdown(
 
 # Use Streamlit's native heading instead of a custom HTML text element.
 # This avoids platform-dependent CJK glyph clipping and weight rendering.
-header_title, header_description = st.columns([1.1, 2.7], gap="small", vertical_alignment="center")
+header_title, header_description = st.columns([1.1, 2.7], gap="small", vertical_alignment="bottom")
 with header_title:
     st.title("🎮 电子游戏百科全书")
 with header_description:

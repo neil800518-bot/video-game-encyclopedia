@@ -1045,8 +1045,8 @@ gallery_games = [
     game
     for game in games
     if (
-        provider == '全部厂商'
-        or str(game.get('provider', '')) == provider
+        not selected_providers
+        or str(game.get('provider', '')).strip() in selected_providers
     )
 ]
 

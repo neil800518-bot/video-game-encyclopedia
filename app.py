@@ -1064,60 +1064,14 @@ def render_game_gallery():
     # reliably wrapping selection summary outside the BaseWeb input.
     gallery_filter_col, gallery_filter_space = st.columns([1, 2], gap='small')
     with gallery_filter_col:
-        st.markdown('总览游戏厂商')
-        selected_count = len(gallery_selected_providers)
-        picker_label = (
-            f'选择游戏厂商（已选 {selected_count} 个）'
-            if selected_count else '全部厂商（可复选）'
+        gallery_selected_providers = st.multiselect(
+            '总览游戏厂商',
+            options=providers,
+            default=[],
+            placeholder='全部厂商（可复选）',
+            help='仅筛选下方游戏图片总览，不影响以图搜图与名称 / ID 搜寻。',
+            key='gallery_selected_providers',
         )
-        with st.popover(picker_label, use_container_width=True):
-            st.multiselect(
-                '选择游戏厂商',
-                options=providers,
-                default=[],
-                placeholder='选择或取消厂商',
-                help='仅筛选下方游戏图片总览，不影响其他搜寻。',
-                key='gallery_selected_providers',
-            )
-        if gallery_selected_providers:
-            tags = ''.join(
-                '<span class="gallery-provider-chip">'
-                + escape(str(provider), quote=True)
-                + '</span>'
-                for provider in gallery_selected_providers
-            )
-            st.markdown(
-                '<div class="gallery-provider-tags">' + tags + '</div>',
-                unsafe_allow_html=True,
-            )
-
-    st.markdown(
-        """
-        <style>
-        .gallery-provider-tags {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-start;
-            gap: 5px;
-            width: 100%;
-            padding: 6px 0 2px;
-        }
-        .gallery-provider-chip {
-            display: inline-block;
-            flex: 0 0 auto;
-            border-radius: 5px;
-            background: #cc3348;
-            color: white;
-            font-size: 12px;
-            line-height: 22px;
-            padding: 0 9px;
-            max-width: 100%;
-            overflow-wrap: anywhere;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
     for row_start in range(
         0,

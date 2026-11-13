@@ -1074,29 +1074,31 @@ def render_game_gallery():
     st.markdown(
         """
         <style>
-        /* Streamlit BaseWeb multi-select: wrap chips instead of horizontal scrolling. */
-        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div {
-            display: flex !important;
-            flex-wrap: wrap !important;
+        /* BaseWeb Select places tags inside a nested value container. Target
+           the actual tag parent rather than the outer control only. */
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div,
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div > div,
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] div:has(> [data-baseweb="tag"]) {
             height: auto !important;
-            min-height: 40px !important;
             max-height: none !important;
             overflow: visible !important;
+        }
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] div:has(> [data-baseweb="tag"]) {
+            display: flex !important;
+            flex-flow: row wrap !important;
             align-content: flex-start !important;
-        }
-        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] > div > div:first-child {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            flex: 1 1 auto !important;
+            gap: 4px !important;
             min-width: 0 !important;
-            height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
-            gap: 3px !important;
+            flex: 1 1 auto !important;
+            white-space: normal !important;
         }
-        [class*="st-key-gallery_selected_providers"] [data-baseweb="tag"] {
-            flex-shrink: 0 !important;
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] [data-baseweb="tag"] {
+            flex: 0 0 auto !important;
             max-width: 100% !important;
+        }
+        /* Keep the input caret on a new row when tags fill the available width. */
+        [class*="st-key-gallery_selected_providers"] [data-baseweb="select"] input {
+            min-width: 20px !important;
         }
         </style>
         """,

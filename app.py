@@ -882,7 +882,41 @@ with result_col:
 # ============================================================
 
 st.divider()
-st.subheader('游戏图片总览')
+st.markdown(
+    """
+    <style>
+    .gallery-heading {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 0.4rem;
+    }
+    .gallery-heading-title { font-size: 1.2rem; font-weight: 700; }
+    .gallery-heading-count { color: #808080; font-size: 0.88rem; }
+    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlock"] {
+        gap: 0.4rem;
+    }
+    [class*="st-key-gallery_card_"] .gallery-game-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        line-height: 1.4;
+        height: 2.8em;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        cursor: help;
+    }
+    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
+        height: 100%;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 gallery_games = [
     game
@@ -893,8 +927,12 @@ gallery_games = [
     )
 ]
 
-st.caption(
-    f'共 {len(gallery_games)} 款游戏'
+st.markdown(
+    '<div class="gallery-heading">'
+    '<span class="gallery-heading-title">游戏图片总览</span>'
+    f'<span class="gallery-heading-count">共 {len(gallery_games)} 款游戏</span>'
+    '</div>',
+    unsafe_allow_html=True,
 )
 
 gallery_per_row = st.radio(
@@ -915,15 +953,15 @@ for row_start in range(
         gap='small',
     )
 
-    for col, game in zip(
+    for card_index, (col, game) in enumerate(zip(
         gallery_cols,
         gallery_games[
             row_start:
             row_start + gallery_per_row
         ],
-    ):
+    )):
         with col:
-            with st.container(border=True):
+            with st.container(border=True, key=f'gallery_card_{row_start}_{card_index}'):
                 path = safe_image_path(game)
 
                 if path:
@@ -932,8 +970,11 @@ for row_start in range(
                         game,
                     )
 
+                full_name = escape(display_game_name(game), quote=True)
                 st.markdown(
-                    f'**{display_game_name(game)}**'
+                    f'<div class="gallery-game-name" title="{full_name}">'
+                    f'{full_name}</div>',
+                    unsafe_allow_html=True,
                 )
 
                 st.caption(

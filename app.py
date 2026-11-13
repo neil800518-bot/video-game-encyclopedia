@@ -52,30 +52,42 @@ st.markdown(
     <style>
     .encyclopedia-header {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         flex-wrap: wrap;
         column-gap: 1.15rem;
         row-gap: 0.25rem;
-        margin: 0.1rem 0 1.15rem;
+        padding: 0.4rem 0 0.5rem;
+        margin: 0 0 0.8rem;
+        height: auto;
+        min-height: 3.2rem;
+        overflow: visible !important;
     }
     .encyclopedia-header .main-title {
+        display: block;
+        flex: 0 0 auto;
         font-size: 2rem;
         font-weight: 700;
-        line-height: 1.35;
+        line-height: 1.65 !important;
+        padding: 0.15rem 0;
+        height: auto !important;
+        overflow: visible !important;
+        white-space: nowrap;
         color: inherit;
     }
     .encyclopedia-header .subtitle {
-        color: #777;
+        display: block;
         font-size: 0.9rem;
-        line-height: 1.5;
+        line-height: 1.65;
+        padding: 0.15rem 0;
+        color: #777;
     }
     @media (max-width: 640px) {
         .encyclopedia-header .main-title { font-size: 1.6rem; }
     }
     </style>
     <div class="encyclopedia-header">
-        <span class="main-title">🎮 电子游戏百科全书</span>
-        <span class="subtitle">Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图</span>
+        <div class="main-title">🎮 电子游戏百科全书</div>
+        <div class="subtitle">Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图</div>
     </div>
     """,
     unsafe_allow_html=True,

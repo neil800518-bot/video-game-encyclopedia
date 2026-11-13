@@ -392,7 +392,16 @@ st.markdown(
         padding-top: 1.4rem;
     }
 
-    [data-stale="true"] {
+    [data-stale="true"],
+    [data-testid="stElementContainer"][data-stale="true"] {
+        display: none !important;
+        transition: none !important;
+        animation: none !important;
+    }
+
+    /* Do not paint empty card shells during Streamlit rerenders. */
+    .st-key-image_results [data-testid="stVerticalBlockBorderWrapper"]:not(:has(img, p, h1, h2, h3, button, [data-testid="stAlert"])),
+    .st-key-text_results [data-testid="stVerticalBlockBorderWrapper"]:not(:has(img, p, h1, h2, h3, button, [data-testid="stAlert"])) {
         display: none !important;
     }
 
@@ -490,22 +499,35 @@ components.html(
                 doc.body.appendChild(button);
             }
 
-            button.onclick = function () {
-                const scroller = doc.querySelector(
-                    '[data-testid="stAppScrollContainer"]'
+            button.onclick = function (event) {
+                event.preventDefault();
+                const win = window.parent;
+                const selectors = [
+                    '[data-testid="stAppScrollContainer"]',
+                    '[data-testid="stMain"]',
+                    'section.main',
+                    '.main',
+                    '[data-testid="stAppViewContainer"]'
+                ];
+                const candidates = selectors.flatMap(
+                    selector => Array.from(doc.querySelectorAll(selector))
                 );
-
-                if (scroller) {
-                    scroller.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                } else {
-                    window.parent.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
+                candidates.push(doc.scrollingElement, doc.documentElement, doc.body);
+                for (const element of candidates) {
+                    if (!element || typeof element.scrollTo !== 'function') continue;
+                    if (element.scrollTop > 0 || element.scrollHeight > element.clientHeight + 5) {
+                        element.scrollTo({top: 0, behavior: 'smooth'});
+                    }
                 }
+                win.scrollTo({top: 0, behavior: 'smooth'});
+                // A second pass handles Streamlit layout updates during reruns.
+                win.requestAnimationFrame(() => {
+                    for (const element of candidates) {
+                        if (element && element.scrollTop > 0) {
+                            element.scrollTop = 0;
+                        }
+                    }
+                });
             };
         }
 
@@ -658,7 +680,9 @@ elif pasted:
 
 
 with result_col:
-    with st.container(border=True):
+    # Separate keyed result trees prevent old image cards being reused on mode changes.
+    result_key = 'image_results' if search_mode == '以图搜图' else 'text_results'
+    with st.container(border=True, key=result_key):
         if search_mode == '以图搜图':
             st.subheader('图片比对结果')
 

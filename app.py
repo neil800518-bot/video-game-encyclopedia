@@ -910,6 +910,40 @@ st.markdown(
         overflow-wrap: anywhere;
         cursor: help;
     }
+    [class*="st-key-gallery_card_"] .gallery-name-wrap {
+        position: relative;
+        overflow: visible;
+        z-index: 1;
+    }
+    [class*="st-key-gallery_card_"] .gallery-name-wrap:hover,
+    [class*="st-key-gallery_card_"] .gallery-name-wrap:focus-within {
+        z-index: 1000;
+    }
+    [class*="st-key-gallery_card_"] .gallery-name-wrap:hover::after,
+    [class*="st-key-gallery_card_"] .gallery-name-wrap:focus-within::after {
+        content: attr(data-full-name);
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 6px);
+        width: max-content;
+        max-width: min(340px, 80vw);
+        white-space: normal;
+        overflow-wrap: anywhere;
+        padding: 8px 10px;
+        border-radius: 6px;
+        background: #262626;
+        color: #fff;
+        font-size: 0.85rem;
+        font-weight: 400;
+        line-height: 1.5;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+        pointer-events: none;
+        z-index: 1001;
+    }
+    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlock"],
+    [class*="st-key-gallery_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
+        overflow: visible;
+    }
     [class*="st-key-gallery_card_"] [data-testid="stVerticalBlockBorderWrapper"] {
         height: 100%;
     }
@@ -972,8 +1006,9 @@ for row_start in range(
 
                 full_name = escape(display_game_name(game), quote=True)
                 st.markdown(
-                    f'<div class="gallery-game-name" title="{full_name}">'
-                    f'{full_name}</div>',
+                    f'<div class="gallery-name-wrap" data-full-name="{full_name}">'
+                    f'<div class="gallery-game-name" tabindex="0">'
+                    f'{full_name}</div></div>',
                     unsafe_allow_html=True,
                 )
 

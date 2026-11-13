@@ -646,14 +646,16 @@ with search_col:
                 placeholder='输入游戏名称、厂商或 ID',
             )
 
-        selected_providers = st.multiselect(
-            '游戏厂商',
-            options=providers,
-            default=[],
-            placeholder='全部厂商（可复选）',
-            help='不选择表示全部厂商；可同时选择多个厂商，点击选项旁的 × 可取消。',
-            key='selected_game_providers',
-        )
+        selected_providers = []
+        if search_mode == '名称 / ID 搜寻':
+            selected_providers = st.multiselect(
+                '游戏厂商',
+                options=providers,
+                default=[],
+                placeholder='全部厂商（可复选）',
+                help='此筛选只影响名称 / ID 搜寻，不影响以图搜图或游戏图片总览。',
+                key='selected_game_providers',
+            )
 
         if search_mode == '以图搜图':
             result_limit = st.radio(
@@ -730,14 +732,6 @@ with result_col:
 
                 with st.spinner('正在比对数据库图片…'):
                     index = build_image_index()
-                    if selected_providers:
-                        index = [
-                            (game, features)
-                            for game, features in index
-                            if str(game.get('provider', '')).strip()
-                            in selected_providers
-                        ]
-
                     ranked = rank_image_matches(
                         query_image,
                         index,
@@ -1041,12 +1035,21 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+gallery_selected_providers = st.multiselect(
+    '总览游戏厂商',
+    options=providers,
+    default=[],
+    placeholder='全部厂商（可复选）',
+    help='仅筛选下方游戏图片总览，不影响以图搜图与名称 / ID 搜寻。',
+    key='gallery_selected_providers',
+)
+
 gallery_games = [
     game
     for game in games
     if (
-        not selected_providers
-        or str(game.get('provider', '')).strip() in selected_providers
+        not gallery_selected_providers
+        or str(game.get('provider', '')).strip() in gallery_selected_providers
     )
 ]
 

@@ -47,51 +47,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    """
-    <style>
-    .encyclopedia-header {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        column-gap: 1.15rem;
-        row-gap: 0.25rem;
-        padding: 0.4rem 0 0.5rem;
-        margin: 0 0 0.8rem;
-        height: auto;
-        min-height: 3.2rem;
-        overflow: visible !important;
-    }
-    .encyclopedia-header .main-title {
-        display: block;
-        flex: 0 0 auto;
-        font-size: 2rem;
-        font-weight: 700;
-        line-height: 1.65 !important;
-        padding: 0.15rem 0;
-        height: auto !important;
-        overflow: visible !important;
-        white-space: nowrap;
-        color: inherit;
-    }
-    .encyclopedia-header .subtitle {
-        display: block;
-        font-size: 0.9rem;
-        line-height: 1.65;
-        padding: 0.15rem 0;
-        color: #777;
-    }
-    @media (max-width: 640px) {
-        .encyclopedia-header .main-title { font-size: 1.6rem; }
-    }
-    </style>
-    <div class="encyclopedia-header">
-        <div class="main-title">🎮 电子游戏百科全书</div>
-        <div class="subtitle">Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# Use Streamlit's native heading instead of a custom HTML text element.
+# This avoids platform-dependent CJK glyph clipping and weight rendering.
+header_title, header_description = st.columns([1.1, 2.7], gap="small", vertical_alignment="center")
+with header_title:
+    st.title("🎮 电子游戏百科全书")
+with header_description:
+    st.caption("Video Game Encyclopedia · 游戏名称 / ID 搜索 · 以图搜图")
 
 
 def load_games():

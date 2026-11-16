@@ -788,7 +788,32 @@ with result_col:
     result_key = 'image_results' if search_mode == '以图搜图' else 'text_results'
     with st.container(border=True, key=result_key):
         if search_mode == '以图搜图':
-            st.subheader('图片比对结果')
+            st.markdown("""
+            <style>
+            .image-results-heading {display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:.65rem}
+            .image-results-heading-title {font-size:1.2rem;font-weight:700}
+            .image-results-heading-count {font-size:.88rem;color:#808080}
+            </style>
+            """, unsafe_allow_html=True)
+            if query_image is None:
+                image_result_count = None
+            else:
+                with st.spinner('正在比对数据库图片…'):
+                    index = build_image_index()
+                    ranked = rank_image_matches(query_image, index, limit=result_limit)
+                image_result_count = len(index)
+            subtitle = (
+                f'v2 多区域搜索 · 已比对 {image_result_count} 张有图片的游戏记录；'
+                '缺图游戏不参与图片搜索。'
+                if image_result_count is not None else ''
+            )
+            st.markdown(
+                '<div class="image-results-heading">'
+                '<span class="image-results-heading-title">图片比对结果</span>'
+                f'<span class="image-results-heading-count">{subtitle}</span>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
 
             if query_image is None:
                 st.info(
@@ -801,20 +826,6 @@ with result_col:
                     query_image,
                     caption='待比对截图',
                     width=180,
-                )
-
-                with st.spinner('正在比对数据库图片…'):
-                    index = build_image_index()
-                    ranked = rank_image_matches(
-                        query_image,
-                        index,
-                        limit=result_limit,
-                    )
-
-                st.caption(
-                    f'v2 多区域搜索 · '
-                    f'已比对 {len(index)} 张有图片的游戏记录；'
-                    f'缺图游戏不参与图片搜索。'
                 )
 
                 if not ranked:
@@ -864,17 +875,9 @@ with result_col:
                                         )
 
                                 with details:
-                                    st.markdown(
-                                        f'**{start + 1}. '
-                                        f'{display_game_name(game)}**'
-                                    )
-
-                                    st.caption(
-                                        f"厂商："
-                                        f"{game.get('provider', '未知')}"
-                                        f" · ID："
-                                        f"{game.get('id', '无')}"
-                                    )
+                                    st.markdown(f'**第 {start + 1} 名**')
+                                    render_search_copy_details(game)
+                                    st.caption(f"ID：{game.get('id', '无')}")
 
                                     st.markdown(
                                         f'**相似分数：'

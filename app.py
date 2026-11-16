@@ -55,7 +55,7 @@ def render_search_copy_details(game, *, rank=None, score=None, matched_region=No
     is_image_match = rank is not None
     markup = """
     <style>
-      html, body { margin: 0; padding: 0; background: transparent; color: inherit; font-family: sans-serif; overflow: hidden; }
+      html, body { margin: 0; padding: 0; background: transparent; color: inherit; font-family: sans-serif; overflow: visible; }
       .line { display: flex; align-items: flex-start; gap: 3px; min-width: 0; }
       .name { font-weight: 700; font-size: 14px; line-height: 20px; display: -webkit-box;
               -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
@@ -69,9 +69,9 @@ def render_search_copy_details(game, *, rank=None, score=None, matched_region=No
                    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
       button.copied { color: #16803c; }
       .status { display: none !important; }
-      .rank { font-weight: 700; font-size: 14px; line-height: 20px; margin-bottom: 5px; }
-      .meta { color: #808080; font-size: 13px; line-height: 18px; margin-top: 5px; }
-      .score { color: inherit; font-size: 14px; font-weight: 700; line-height: 20px; margin-top: 5px; }
+      .rank { font-weight: 700; font-size: 14px; line-height: 20px; margin-bottom: 4px; }
+      .meta { color: #808080; font-size: 13px; line-height: 18px; margin-top: 4px; }
+      .score { color: inherit; font-size: 14px; font-weight: 700; line-height: 20px; margin-top: 4px; }
     </style>
     __RANK__
     <div class="line">
@@ -134,7 +134,7 @@ def render_search_copy_details(game, *, rank=None, score=None, matched_region=No
         .replace("__PROVIDER__", provider)
         .replace("__RANK__", rank_html)
         .replace("__MATCH_META__", match_html),
-        height=133 if is_image_match else 48,
+        height=183 if is_image_match else 76,
         scrolling=False,
     )
 

@@ -731,6 +731,36 @@ with search_col:
             )
 
         if search_mode == '以图搜图':
+            # Keep the current scroll position when changing the top-3/top-5 radio.
+            # The browser script only targets this radio; other controls are unchanged.
+            components.html("""
+            <script>
+            (() => {
+              const doc = window.parent.document;
+              const win = window.parent;
+              const key = '__vge_image_rank_scroll';
+              if (win.__vgeRankScrollInstalled) return;
+              win.__vgeRankScrollInstalled = true;
+              const scroller = () => doc.querySelector('[data-testid="stAppViewContainer"]') || doc.scrollingElement;
+              doc.addEventListener('change', (ev) => {
+                const radio = ev.target.closest('input[type="radio"]');
+                if (!radio) return;
+                const group = radio.closest('[role="radiogroup"]');
+                if (!group || !group.textContent.includes('前 3 名') && !group.textContent.includes('前 5 名')) return;
+                const el = scroller();
+                win.__vgeRankScrollRestore = {top: el.scrollTop, until: Date.now() + 1800};
+              }, true);
+              const observer = new MutationObserver(() => {
+                const state = win.__vgeRankScrollRestore;
+                if (!state) return;
+                if (Date.now() > state.until) {win.__vgeRankScrollRestore = null; return;}
+                const el = scroller();
+                if (Math.abs(el.scrollTop - state.top) > 2) el.scrollTop = state.top;
+              });
+              observer.observe(doc.body, {childList:true, subtree:true});
+            })();
+            </script>
+            """, height=0)
             result_limit = st.radio(
                 '显示比对结果',
                 [3, 5],
@@ -790,7 +820,7 @@ with result_col:
         if search_mode == '以图搜图':
             st.markdown("""
             <style>
-            .image-results-heading {display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:.65rem}
+            .image-results-heading {display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:.15rem}
             .image-results-heading-title {font-size:1.2rem;font-weight:700}
             .image-results-heading-count {font-size:.88rem;color:#808080}
             </style>
@@ -825,7 +855,7 @@ with result_col:
                 st.image(
                     query_image,
                     caption='待比对截图',
-                    width=180,
+                    width=140,
                 )
 
                 if not ranked:
@@ -841,7 +871,7 @@ with result_col:
                     for start in range(len(ranked)):
                         if start == 0:
                             _, center, _ = st.columns(
-                                [1, 2, 1],
+                                [0.65, 2.7, 0.65],
                                 gap='small',
                             )
                             target = center

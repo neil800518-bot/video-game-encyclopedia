@@ -49,32 +49,39 @@ st.markdown(
 
 
 def render_search_copy_details(game):
-    """Clickable copy controls for the full game name and provider only."""
+    """Compact name/provider copy controls without extra card height."""
     name = escape(display_game_name(game), quote=True)
     provider = escape(str(game.get('provider', '未知')), quote=True)
     markup = """
     <style>
-      html, body { margin: 0; padding: 0; background: transparent; color: inherit; font-family: sans-serif; }
+      html, body { margin: 0; padding: 0; background: transparent; color: inherit; font-family: sans-serif; overflow: hidden; }
       .line { display: flex; align-items: flex-start; gap: 3px; min-width: 0; }
-      .name { font-weight: 700; font-size: 14px; line-height: 1.4; display: -webkit-box;
+      .name { font-weight: 700; font-size: 14px; line-height: 20px; display: -webkit-box;
               -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
               overflow-wrap: anywhere; flex: 1; min-width: 0; }
-      .provider { color: #808080; font-size: 13px; line-height: 23px; overflow-wrap: anywhere; }
+      .provider { color: #808080; font-size: 13px; line-height: 22px; overflow-wrap: anywhere; }
       button { border: 0; background: transparent; color: #777; cursor: pointer;
-               padding: 2px 4px; flex-shrink: 0; font-size: 15px; border-radius: 4px; }
+               padding: 2px; width: 22px; height: 23px; flex-shrink: 0; border-radius: 4px;
+               display: inline-flex; align-items: center; justify-content: center; }
       button:hover, button:focus-visible { background: #eeeeee; color: #222; }
-      .feedback { height: 17px; color: #666; font-size: 11px; line-height: 17px; }
+      button svg { width: 15px; height: 15px; stroke: currentColor; fill: none;
+                   stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+      button.copied { color: #16803c; }
+      .status { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                clip-path: inset(50%); white-space: nowrap; }
     </style>
     <div class="line">
       <div class="name" title="__NAME__">__NAME__</div>
-      <button type="button" data-copy="__NAME__" aria-label="复制完整游戏名称" title="复制完整游戏名称">▢</button>
+      <button type="button" data-copy="__NAME__" aria-label="复制完整游戏名称" title="复制完整游戏名称"></button>
     </div>
     <div class="line">
       <span class="provider">厂商：__PROVIDER__</span>
-      <button type="button" data-copy="__PROVIDER__" aria-label="复制厂商名称" title="复制厂商名称">▢</button>
+      <button type="button" data-copy="__PROVIDER__" aria-label="复制厂商名称" title="复制厂商名称"></button>
     </div>
-    <div class="feedback" aria-live="polite"></div>
+    <div class="status" role="status" aria-live="polite"></div>
     <script>
+    const copyIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
+    const checkIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>';
     async function copyText(value) {
       if (navigator.clipboard && window.isSecureContext) {
         try { await navigator.clipboard.writeText(value); return true; } catch (e) {}
@@ -89,17 +96,27 @@ def render_search_copy_details(game):
       return ok;
     }
     document.querySelectorAll('button[data-copy]').forEach(button => {
+      button.innerHTML = copyIcon;
       button.addEventListener('click', async () => {
         const ok = await copyText(button.dataset.copy);
-        document.querySelector('.feedback').textContent =
-          ok ? '已复制成功' : '复制失败，请检查浏览器剪贴簿权限';
+        const message = ok ? '已复制成功' : '复制失败，请检查浏览器剪贴簿权限';
+        document.querySelector('.status').textContent = message;
+        button.innerHTML = ok ? checkIcon : copyIcon;
+        button.classList.toggle('copied', ok);
+        button.title = message;
+        clearTimeout(button.resetTimer);
+        button.resetTimer = setTimeout(() => {
+          button.innerHTML = copyIcon;
+          button.classList.remove('copied');
+          button.title = button.getAttribute('aria-label');
+        }, 1500);
       });
     });
     </script>
     """
     components.html(
         markup.replace("__NAME__", name).replace("__PROVIDER__", provider),
-        height=87,
+        height=65,
         scrolling=False,
     )
 

@@ -48,10 +48,11 @@ st.markdown(
 )
 
 
-def render_search_copy_details(game):
+def render_search_copy_details(game, *, rank=None, score=None, matched_region=None):
     """Compact name/provider copy controls without extra card height."""
     name = escape(display_game_name(game), quote=True)
     provider = escape(str(game.get('provider', '未知')), quote=True)
+    is_image_match = rank is not None
     markup = """
     <style>
       html, body { margin: 0; padding: 0; background: transparent; color: inherit; font-family: sans-serif; overflow: hidden; }
@@ -68,7 +69,11 @@ def render_search_copy_details(game):
                    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
       button.copied { color: #16803c; }
       .status { display: none !important; }
+      .rank { font-weight: 700; font-size: 14px; line-height: 20px; margin-bottom: 5px; }
+      .meta { color: #808080; font-size: 13px; line-height: 18px; margin-top: 5px; }
+      .score { color: inherit; font-size: 14px; font-weight: 700; line-height: 20px; margin-top: 5px; }
     </style>
+    __RANK__
     <div class="line">
       <div class="name" title="__NAME__">__NAME__</div>
       <button type="button" data-copy="__NAME__" aria-label="复制完整游戏名称" title="复制完整游戏名称"></button>
@@ -77,6 +82,7 @@ def render_search_copy_details(game):
       <span class="provider">厂商：__PROVIDER__</span>
       <button type="button" data-copy="__PROVIDER__" aria-label="复制厂商名称" title="复制厂商名称"></button>
     </div>
+    __MATCH_META__
     <div class="status" role="status" aria-live="polite"></div>
     <script>
     const copyIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
@@ -113,9 +119,22 @@ def render_search_copy_details(game):
     });
     </script>
     """
+    rank_html = f'<div class="rank">第 {rank} 名</div>' if is_image_match else ''
+    match_html = ''
+    if is_image_match:
+        game_id = escape(str(game.get('id', '无')), quote=True)
+        region = escape(str(matched_region), quote=True)
+        match_html = (
+            f'<div class="meta">ID：{game_id}</div>'
+            f'<div class="score">相似分数：{score * 100:.1f}/100</div>'
+            f'<div class="meta">比对区域：{region}</div>'
+        )
     components.html(
-        markup.replace("__NAME__", name).replace("__PROVIDER__", provider),
-        height=48,
+        markup.replace("__NAME__", name)
+        .replace("__PROVIDER__", provider)
+        .replace("__RANK__", rank_html)
+        .replace("__MATCH_META__", match_html),
+        height=133 if is_image_match else 48,
         scrolling=False,
     )
 
@@ -905,17 +924,11 @@ with result_col:
                                         )
 
                                 with details:
-                                    st.markdown(f'**第 {start + 1} 名**')
-                                    render_search_copy_details(game)
-                                    st.caption(f"ID：{game.get('id', '无')}")
-
-                                    st.markdown(
-                                        f'**相似分数：'
-                                        f'{score * 100:.1f}/100**'
-                                    )
-
-                                    st.caption(
-                                        f'比对区域：{matched_region}'
+                                    render_search_copy_details(
+                                        game,
+                                        rank=start + 1,
+                                        score=score,
+                                        matched_region=matched_region,
                                     )
 
                     st.info(

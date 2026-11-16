@@ -47,6 +47,63 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+def render_search_copy_details(game):
+    """Clickable copy controls for the full game name and provider only."""
+    name = escape(display_game_name(game), quote=True)
+    provider = escape(str(game.get('provider', '未知')), quote=True)
+    markup = """
+    <style>
+      html, body { margin: 0; padding: 0; background: transparent; color: inherit; font-family: sans-serif; }
+      .line { display: flex; align-items: flex-start; gap: 3px; min-width: 0; }
+      .name { font-weight: 700; font-size: 14px; line-height: 1.4; display: -webkit-box;
+              -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+              overflow-wrap: anywhere; flex: 1; min-width: 0; }
+      .provider { color: #808080; font-size: 13px; line-height: 23px; overflow-wrap: anywhere; }
+      button { border: 0; background: transparent; color: #777; cursor: pointer;
+               padding: 2px 4px; flex-shrink: 0; font-size: 15px; border-radius: 4px; }
+      button:hover, button:focus-visible { background: #eeeeee; color: #222; }
+      .feedback { height: 17px; color: #666; font-size: 11px; line-height: 17px; }
+    </style>
+    <div class="line">
+      <div class="name" title="__NAME__">__NAME__</div>
+      <button type="button" data-copy="__NAME__" aria-label="复制完整游戏名称" title="复制完整游戏名称">▢</button>
+    </div>
+    <div class="line">
+      <span class="provider">厂商：__PROVIDER__</span>
+      <button type="button" data-copy="__PROVIDER__" aria-label="复制厂商名称" title="复制厂商名称">▢</button>
+    </div>
+    <div class="feedback" aria-live="polite"></div>
+    <script>
+    async function copyText(value) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(value); return true; } catch (e) {}
+      }
+      const area = document.createElement('textarea');
+      area.value = value; area.setAttribute('readonly', '');
+      area.style.position = 'fixed'; area.style.opacity = '0';
+      document.body.appendChild(area); area.focus(); area.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      area.remove();
+      return ok;
+    }
+    document.querySelectorAll('button[data-copy]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const ok = await copyText(button.dataset.copy);
+        document.querySelector('.feedback').textContent =
+          ok ? '已复制成功' : '复制失败，请检查浏览器剪贴簿权限';
+      });
+    });
+    </script>
+    """
+    components.html(
+        markup.replace("__NAME__", name).replace("__PROVIDER__", provider),
+        height=87,
+        scrolling=False,
+    )
+
+
 # Use Streamlit's native heading instead of a custom HTML text element.
 # This avoids platform-dependent CJK glyph clipping and weight rendering.
 header_title, header_description = st.columns([1.1, 2.7], gap="small", vertical_alignment="bottom")
@@ -949,61 +1006,6 @@ with result_col:
                                 )
 
 
-
-def render_search_copy_details(game):
-    """Clickable copy controls for the full game name and provider only."""
-    name = escape(display_game_name(game), quote=True)
-    provider = escape(str(game.get('provider', '未知')), quote=True)
-    markup = """
-    <style>
-      html, body { margin: 0; padding: 0; background: transparent; color: inherit; font-family: sans-serif; }
-      .line { display: flex; align-items: flex-start; gap: 3px; min-width: 0; }
-      .name { font-weight: 700; font-size: 14px; line-height: 1.4; display: -webkit-box;
-              -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
-              overflow-wrap: anywhere; flex: 1; min-width: 0; }
-      .provider { color: #808080; font-size: 13px; line-height: 23px; overflow-wrap: anywhere; }
-      button { border: 0; background: transparent; color: #777; cursor: pointer;
-               padding: 2px 4px; flex-shrink: 0; font-size: 15px; border-radius: 4px; }
-      button:hover, button:focus-visible { background: #eeeeee; color: #222; }
-      .feedback { height: 17px; color: #666; font-size: 11px; line-height: 17px; }
-    </style>
-    <div class="line">
-      <div class="name" title="__NAME__">__NAME__</div>
-      <button type="button" data-copy="__NAME__" aria-label="复制完整游戏名称" title="复制完整游戏名称">▢</button>
-    </div>
-    <div class="line">
-      <span class="provider">厂商：__PROVIDER__</span>
-      <button type="button" data-copy="__PROVIDER__" aria-label="复制厂商名称" title="复制厂商名称">▢</button>
-    </div>
-    <div class="feedback" aria-live="polite"></div>
-    <script>
-    async function copyText(value) {
-      if (navigator.clipboard && window.isSecureContext) {
-        try { await navigator.clipboard.writeText(value); return true; } catch (e) {}
-      }
-      const area = document.createElement('textarea');
-      area.value = value; area.setAttribute('readonly', '');
-      area.style.position = 'fixed'; area.style.opacity = '0';
-      document.body.appendChild(area); area.focus(); area.select();
-      let ok = false;
-      try { ok = document.execCommand('copy'); } catch (e) {}
-      area.remove();
-      return ok;
-    }
-    document.querySelectorAll('button[data-copy]').forEach(button => {
-      button.addEventListener('click', async () => {
-        const ok = await copyText(button.dataset.copy);
-        document.querySelector('.feedback').textContent =
-          ok ? '已复制成功' : '复制失败，请检查浏览器剪贴簿权限';
-      });
-    });
-    </script>
-    """
-    components.html(
-        markup.replace("__NAME__", name).replace("__PROVIDER__", provider),
-        height=87,
-        scrolling=False,
-    )
 
 @st.fragment
 def render_game_gallery():

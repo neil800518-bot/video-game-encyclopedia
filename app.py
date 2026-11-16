@@ -490,6 +490,43 @@ def rank_image_matches(query, index, limit=5):
     )[:limit]
 
 
+def diagnostic_image_match(query, index, target_id='CG-0001'):
+    """Read-only v3 diagnostics; ranking algorithm remains unchanged."""
+    prepared = prepare_image(query)
+    trimmed = remove_thumbnail_padding(query)
+    all_regions = query_regions(query)
+    target = next(
+        ((game, features) for game, features in index
+         if str(game.get('id', '')).strip() == target_id),
+        None,
+    )
+    details = {
+        'input_size': query.size,
+        'prepared_size': prepared.size,
+        'trimmed_size': trimmed.size if trimmed is not None else None,
+        'target_found': target is not None,
+        'regions': [],
+    }
+    if target is None:
+        return details
+    for label, region in all_regions:
+        features = image_features(region)
+        fraction = region.width * region.height / max(1, query.width * query.height)
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        target_score = max(0.0, similarity(features, target[1]) - penalty)
+        higher = sum(
+            similarity(features, other_features) - penalty > target_score
+            for _, other_features in index
+        )
+        details['regions'].append({
+            'label': label,
+            'size': region.size,
+            'rank': higher + 1,
+            'score': target_score,
+        })
+    return details
+
+
 def decode_pasted_image(data):
     if (
         not isinstance(data, str)
@@ -893,6 +930,33 @@ with result_col:
                     index = build_image_index()
                     ranked = rank_image_matches(query_image, index, limit=result_limit)
                 image_result_count = len(index)
+                # Diagnostics are intentionally limited to the isolated v3 test branch.
+                with st.expander('🔬 v3 辨識診斷｜CG-0001', expanded=False):
+                    diagnostic = diagnostic_image_match(query_image, index)
+                    st.caption('僅顯示診斷資訊，不影響實際搜尋排名。')
+                    st.write(f"上傳圖片尺寸：{diagnostic['input_size'][0]} × {diagnostic['input_size'][1]}")
+                    st.write(f"預處理尺寸：{diagnostic['prepared_size'][0]} × {diagnostic['prepared_size'][1]}")
+                    if diagnostic['trimmed_size'] is None:
+                        st.write('白邊裁切：未觸發')
+                    else:
+                        tw, th = diagnostic['trimmed_size']
+                        st.write(f'白邊裁切：已觸發，裁切後 {tw} × {th}')
+                    if not diagnostic['target_found']:
+                        st.warning('CG-0001 不在目前可搜尋的圖片索引中。')
+                    else:
+                        st.dataframe(
+                            [
+                                {
+                                    '比對區域': item['label'],
+                                    '區域尺寸': f"{item['size'][0]} × {item['size'][1]}",
+                                    'CG-0001 排名': item['rank'],
+                                    '相似分數': round(item['score'] * 100, 1),
+                                }
+                                for item in diagnostic['regions']
+                            ],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
             subtitle = (
                 f'v2 多区域搜索 · 已比对 {image_result_count} 张有图片的游戏记录；'
                 '缺图游戏不参与图片搜索。'

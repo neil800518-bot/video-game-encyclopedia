@@ -1060,42 +1060,21 @@ def render_game_gallery():
         key='gallery_columns',
     )
 
-    # Scope wrapping rules to the gallery selector only. Streamlit's BaseWeb
-    # multiselect uses a horizontally scrolling value container by default.
+    # Use the same ordinary vertical layout as the working name/ID selector.
+    # Constrain only the outer wrapper width; do not override BaseWeb internals.
     st.markdown(
         """
         <style>
-        .st-key-gallery_selected_providers [data-baseweb="select"] > div {
-            height: auto !important;
-            min-height: 40px !important;
-            max-height: none !important;
-            overflow: visible !important;
-        }
-        .st-key-gallery_selected_providers [data-baseweb="select"] [class*="ValueContainer"],
-        .st-key-gallery_selected_providers [data-baseweb="select"] [class*="valueContainer"],
-        .st-key-gallery_selected_providers [data-baseweb="select"] > div > div:first-child {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            align-content: center !important;
-            row-gap: 4px !important;
-            overflow: visible !important;
-            max-height: none !important;
-            white-space: normal !important;
-        }
-        .st-key-gallery_selected_providers [data-baseweb="select"] [data-baseweb="tag"] {
-            flex: 0 0 auto !important;
-            max-width: 100% !important;
+        .st-key-gallery_provider_selector {
+            width: 100%;
+            max-width: 440px;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
-
-    # Keep the same native multiselect UI as the name / ID search.
-
-    gallery_filter_col, gallery_filter_space = st.columns([1, 2], gap='small')
-    with gallery_filter_col:
-        gallery_selected_providers = st.multiselect(
+    with st.container(key='gallery_provider_selector'):
+        st.multiselect(
             '总览游戏厂商',
             options=providers,
             default=[],

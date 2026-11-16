@@ -67,8 +67,7 @@ def render_search_copy_details(game):
       button svg { width: 15px; height: 15px; stroke: currentColor; fill: none;
                    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
       button.copied { color: #16803c; }
-      .status { position: absolute; width: 1px; height: 1px; overflow: hidden;
-                clip-path: inset(50%); white-space: nowrap; }
+      .status { display: none !important; }
     </style>
     <div class="line">
       <div class="name" title="__NAME__">__NAME__</div>
@@ -116,7 +115,7 @@ def render_search_copy_details(game):
     """
     components.html(
         markup.replace("__NAME__", name).replace("__PROVIDER__", provider),
-        height=65,
+        height=48,
         scrolling=False,
     )
 

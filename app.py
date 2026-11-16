@@ -359,11 +359,53 @@ def build_image_index():
     return entries
 
 
+def remove_thumbnail_padding(img):
+    """Remove the uniform white canvas used by overview thumbnails.
+
+    Only trim when a nearly-white border touches all four sides, so
+    ordinary screenshots are left unchanged.
+    """
+    img = prepare_image(img)
+    rgb = np.asarray(img, dtype=np.uint8)
+    if img.width < 48 or img.height < 48:
+        return None
+
+    white = np.all(rgb >= 245, axis=2)
+    edge_white = [
+        float(white[0, :].mean()),
+        float(white[-1, :].mean()),
+        float(white[:, 0].mean()),
+        float(white[:, -1].mean()),
+    ]
+    if min(edge_white) < 0.90:
+        return None
+
+    nonwhite = ~white
+    ys, xs = np.where(nonwhite)
+    if len(xs) == 0:
+        return None
+
+    left, right = int(xs.min()), int(xs.max()) + 1
+    top, bottom = int(ys.min()), int(ys.max()) + 1
+    if (right - left) < 32 or (bottom - top) < 32:
+        return None
+    if (right - left) >= img.width - 2 and (bottom - top) >= img.height - 2:
+        return None
+    return img.crop((left, top, right, bottom))
+
+
 def query_regions(img):
     img = prepare_image(img)
     w, h = img.size
 
     regions = [('完整截图', img)]
+
+    # Overview cards are letterboxed on a 240x320 white canvas.
+    # Compare their unpadded content as an additional query candidate.
+    unpadded = remove_thumbnail_padding(img)
+    if unpadded is not None:
+        regions.append(('去除总览缩图白边', unpadded))
+
 
     for fraction in (0.28, 0.38, 0.50, 0.65, 0.80):
         crop_w = max(32, int(w * fraction))

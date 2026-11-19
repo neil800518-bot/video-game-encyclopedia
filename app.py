@@ -417,6 +417,66 @@ def remove_thumbnail_padding(img):
     return img.crop((left, top, right, bottom))
 
 
+
+def locate_portrait_game_regions(img):
+    """Find dense portrait content inside a wide browser screenshot.
+
+    This is an optional candidate generator, not a replacement for the
+    existing matching features or scoring. Reject ambiguous/light layouts.
+    """
+    w, h = img.size
+    if w < 700 or w / max(1, h) < 1.15:
+        return []
+
+    rgb = np.asarray(img, dtype=np.float32) / 255.0
+    hi = rgb.max(axis=2)
+    lo = rgb.min(axis=2)
+    chroma = hi - lo
+    # Dense game artwork is usually colorful and nonwhite, unlike browser UI.
+    ink = (chroma > 0.16) & (lo < 0.76)
+    row_start, row_end = int(h * 0.16), int(h * 0.88)
+    column_density = ink[row_start:row_end].mean(axis=0)
+    kernel = np.ones(9, dtype=np.float32) / 9.0
+    smoothed = np.convolve(column_density, kernel, mode='same')
+    active = smoothed > 0.24
+
+    runs = []
+    start = None
+    for x in range(w + 1):
+        occupied = x < w and bool(active[x])
+        if occupied and start is None:
+            start = x
+        elif not occupied and start is not None:
+            if int(w * 0.14) <= x - start <= int(w * 0.40):
+                runs.append((start, x))
+            start = None
+
+    candidates = []
+    for left, right in sorted(
+        runs, key=lambda pair: -float(smoothed[pair[0]:pair[1]].mean())
+    )[:3]:
+        # Recover vertical content boundaries using the same conservative mask.
+        row_density = ink[:, left:right].mean(axis=1)
+        ys = np.flatnonzero(row_density > 0.25)
+        if len(ys) < int(h * 0.42):
+            continue
+        top, bottom = int(ys[0]), int(ys[-1]) + 1
+        if not (int(h * 0.40) <= bottom - top <= int(h * 0.95)):
+            continue
+        if not (0.35 <= (right - left) / (bottom - top) <= 0.85):
+            continue
+        # Include a small boundary margin for antialiased game edges.
+        margin_x = max(2, int(w * 0.004))
+        margin_y = max(2, int(h * 0.004))
+        box = (max(0, left - margin_x), max(0, top - margin_y),
+               min(w, right + margin_x), min(h, bottom + margin_y))
+        candidates.append((
+            '第五階段｜自動定位直向遊戲',
+            img.crop(box),
+        ))
+    return candidates
+
+
 def query_regions(img):
     img = prepare_image(img)
     w, h = img.size
@@ -480,6 +540,8 @@ def query_regions(img):
                             img.crop((left, top, left + window_w, top + window_h)),
                         ))
 
+    # Phase 5: content-aware candidates; original candidates stay untouched.
+    regions.extend(locate_portrait_game_regions(img))
     return regions
 
 

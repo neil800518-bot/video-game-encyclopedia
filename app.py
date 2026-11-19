@@ -926,6 +926,76 @@ def diagnostic_weight_simulation(query, index, target_id='CG-0001', competitor_i
     return output
 
 
+
+def diagnostic_phase10_top1_analysis(query, index, target_id='CG-0001', competitor_id='DB-0041'):
+    """Read-only C-weight false-positive analysis using Phase 9's full ranking."""
+    simulations = diagnostic_weight_simulation(
+        query, index, target_id=target_id, competitor_id=competitor_id
+    )
+    weights = (0.25, 0.25, 0.50)
+    area = max(1, query.width * query.height)
+    target_features = {
+        str(game.get('id', '')).strip(): features
+        for game, features in index
+        if str(game.get('id', '')).strip() in (target_id, competitor_id)
+    }
+    per_region = []
+    for label, region in query_regions(query):
+        candidate = image_features(region)
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        for game_id in (target_id, competitor_id):
+            if game_id not in target_features:
+                continue
+            gray_a, hash_a, hist_a = candidate
+            gray_b, hash_b, hist_b = target_features[game_id]
+            structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(structural):
+                structural = 0.0
+            structural = max(0.0, structural)
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            score = max(0.0, weights[0] * structural
+                        + weights[1] * hash_score
+                        + weights[2] * color_score - penalty)
+            per_region.append({
+                '遊戲 ID': game_id,
+                '比對區域': label,
+                '結構': round(structural * 100, 2),
+                '雜湊': round(hash_score * 100, 2),
+                '色彩': round(color_score * 100, 2),
+                '結構貢獻': round(weights[0] * structural * 100, 2),
+                '雜湊貢獻': round(weights[1] * hash_score * 100, 2),
+                '色彩貢獻': round(weights[2] * color_score * 100, 2),
+                '面積扣分': round(penalty * 100, 2),
+                'C 方案分數': round(score * 100, 2),
+            })
+    c = simulations['C｜色彩加強']
+    target, competitor = c['target'], c['competitor']
+    summary = []
+    for item in (target, competitor):
+        if item is None:
+            continue
+        summary.append({
+            '遊戲 ID': item['id'],
+            'C 方案排名': item['rank'],
+            '最佳區域': item['region'],
+            '結構貢獻': round(item['structural'] * 25, 2),
+            '雜湊貢獻': round(item['hash'] * 25, 2),
+            '色彩貢獻': round(item['color'] * 50, 2),
+            '面積扣分': round(item['penalty'] * 100, 2),
+            'C 方案分數': round(item['score'] * 100, 2),
+        })
+    return {
+        'summary': summary,
+        'per_region': per_region,
+        'total': c['total'],
+        'gap': round((competitor['score'] - target['score']) * 100, 2)
+            if target and competitor else None,
+        'top_five': c['rows'][:5],
+    }
+
+
 def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
     """Inspect source dimensions and letterboxing without changing matching."""
     game = next(
@@ -1485,6 +1555,37 @@ with result_col:
                                 hide_index=True,
                                 use_container_width=True,
                             )
+
+                    st.markdown('**Phase 10｜第一名誤判分析（唯讀）**')
+                    st.caption(
+                        '以 C 方案（結構 25%、雜湊 25%、色彩 50%）'
+                        '比較 CG-0001 與 DB-0041，包含所有候選區域；'
+                        '此區塊僅分析，不變更實際搜尋排名。'
+                    )
+                    phase10 = diagnostic_phase10_top1_analysis(query_image, index)
+                    st.write(f"本次分析涵蓋 {phase10['total']} 款索引圖片。")
+                    if len(phase10['summary']) == 2:
+                        st.dataframe(
+                            phase10['summary'],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+                        st.caption(
+                            f"DB-0041 相對 CG-0001 的 C 方案分數差："
+                            f"{phase10['gap']:+.2f} 分。"
+                        )
+                    else:
+                        st.warning('找不到 CG-0001 或 DB-0041，請檢查圖片索引。')
+                    with st.expander('Phase 10｜全部比對區域詳細分數', expanded=False):
+                        st.dataframe(
+                            phase10['per_region'],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+                    st.caption(
+                        '評估時請同時檢查前五名其他遊戲的分數，'
+                        '避免只為單一截圖調整權重而造成其他誤判。'
+                    )
                     st.markdown('**第二階段｜尺寸及長寬比**')
                     st.write(
                         f"查詢圖片：{aspect_audit['query_size'][0]} × "

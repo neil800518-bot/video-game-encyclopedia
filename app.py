@@ -1182,7 +1182,7 @@ def diagnostic_phase12_structure(query, index, target_id='CG-0001', competitor_i
                 '最佳區域': row['region'] if row else '未找到',
             })
     return {'summary': summary, 'audit': audit, 'top_fives': top_fives,
-            'region_count': len(candidates)}
+            'ranked': ranked, 'region_count': len(candidates)}
 
 
 def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
@@ -1829,6 +1829,90 @@ with result_col:
                         '負相關映射會改變結構分數尺度；保留負相關則允許負貢獻。'
                         '兩者均非已驗證改善方案，須用多張獨立標註圖片評估。'
                     )
+                    with st.expander('Phase 13｜多樣本驗證（唯讀）', expanded=False):
+                        st.caption(
+                            '上傳多張獨立測試截圖，並以 CSV 標註檔提供'
+                            'sample_id,expected_id；sample_id 必須等於圖片檔名（含副檔名）。'
+                            '三種策略皆對完整圖片索引重新排序。'
+                            '不改變正式搜尋結果。'
+                        )
+                        phase13_images = st.file_uploader(
+                            '獨立驗證圖片（可多選）',
+                            type=['png', 'jpg', 'jpeg', 'webp'],
+                            accept_multiple_files=True,
+                            key='phase13_validation_images',
+                        )
+                        phase13_labels = st.file_uploader(
+                            'CSV 標註檔（UTF-8，sample_id,expected_id）',
+                            type=['csv'],
+                            key='phase13_validation_labels',
+                        )
+                        if st.button('執行 Phase 13 多樣本驗證', key='phase13_run'):
+                            import csv
+                            from phase13_validation import evaluate_multisample
+                            if not phase13_images or phase13_labels is None:
+                                st.warning('請先提供驗證圖片及 CSV 標註檔。')
+                            else:
+                                try:
+                                    label_text = phase13_labels.getvalue().decode('utf-8-sig')
+                                    label_rows = list(csv.DictReader(io.StringIO(label_text)))
+                                    if not label_rows or any(
+                                        not row.get('sample_id') or not row.get('expected_id')
+                                        for row in label_rows
+                                    ):
+                                        raise ValueError('標註檔缺少 sample_id 或 expected_id')
+                                    uploaded_by_name = {f.name: f for f in phase13_images}
+                                    if len(uploaded_by_name) != len(phase13_images):
+                                        raise ValueError('圖片檔名重複')
+                                    if set(uploaded_by_name) != {
+                                        row['sample_id'] for row in label_rows
+                                    }:
+                                        raise ValueError('圖片檔名與 CSV sample_id 不完全一致')
+                                    known_ids = {
+                                        str(game.get('id', '')).strip() for game, _ in index
+                                    }
+                                    if any(
+                                        row['expected_id'].strip() not in known_ids
+                                        for row in label_rows
+                                    ):
+                                        raise ValueError('CSV 包含不在圖片索引中的正確遊戲 ID')
+                                    rankings = {
+                                        name: {} for name in (
+                                            'C 原始截斷', '負相關映射至 0–1',
+                                            '保留負相關貢獻'
+                                        )
+                                    }
+                                    with st.spinner('正在計算全部獨立樣本的完整索引排名…'):
+                                        for row in label_rows:
+                                            sample_id = row['sample_id']
+                                            file = uploaded_by_name[sample_id]
+                                            with Image.open(io.BytesIO(file.getvalue())) as img:
+                                                sample_image = img.copy()
+                                            results = diagnostic_phase12_structure(
+                                                sample_image, index,
+                                                target_id=row['expected_id'].strip(),
+                                                competitor_id='',
+                                            )
+                                            for name in rankings:
+                                                rankings[name][sample_id] = results['ranked'][name]
+                                    report = evaluate_multisample(label_rows, rankings)
+                                    st.success(f"已驗證 {report['sample_count']} 張獨立圖片。")
+                                    st.dataframe(
+                                        report['summary'], hide_index=True,
+                                        use_container_width=True,
+                                    )
+                                    st.dataframe(
+                                        report['audit'], hide_index=True,
+                                        use_container_width=True,
+                                    )
+                                    st.caption(
+                                        '此處為上傳樣本的驗證結果，非整體資料庫準確率；'
+                                        '不會自動選用或套用最佳策略。'
+                                    )
+                                except (ValueError, KeyError, UnicodeError, OSError,
+                                        UnidentifiedImageError) as exc:
+                                    st.error(f'Phase 13 驗證失敗：{exc}')
+
                     st.markdown('**第二階段｜尺寸及長寬比**')
                     st.write(
                         f"查詢圖片：{aspect_audit['query_size'][0]} × "

@@ -478,18 +478,16 @@ def locate_portrait_game_regions(img):
 
 
 def refine_portrait_game_boundaries(img):
-    """Optional phase-six boundary candidates around phase-five detections.
+    """Add edge-guided portrait bounds without changing existing scoring.
 
-    Use the existing portrait detector as a seed, then probe modestly expanded
-    bounds.  This does not replace earlier regions or alter similarity scores.
+    The fifth-stage color mask supplies the seed.  A local image-gradient
+    search then looks for dark/low-saturation frame edges which that mask
+    can miss.  Legacy phase-six margin candidates are retained.
     """
     w, h = img.size
     if w < 700 or w / max(1, h) < 1.15:
         return []
 
-    # Reuse phase-five candidates, but locate their original pixels by matching
-    # the candidate's RGB content against a small neighborhood is unreliable.
-    # Instead recover the same projection runs and derive conservative bounds.
     rgb = np.asarray(img, dtype=np.float32) / 255.0
     hi, lo = rgb.max(axis=2), rgb.min(axis=2)
     ink = ((hi - lo) > 0.16) & (lo < 0.76)
@@ -510,6 +508,9 @@ def refine_portrait_game_boundaries(img):
                 runs.append((start, x))
             start = None
 
+    # Grayscale differences reveal boundaries even when their pixels are
+    # dark or desaturated. Only inspect a narrow band near the color seed.
+    gray = rgb.mean(axis=2)
     candidates = []
     for left, right in sorted(
         runs, key=lambda pair: -float(density[pair[0]:pair[1]].mean())
@@ -525,19 +526,63 @@ def refine_portrait_game_boundaries(img):
         if not (0.35 <= bw / max(1, bh) <= 0.85):
             continue
 
-        # Phase five uses a tight colorful-content box. Real game screens may
-        # contain dark or low-saturation edges. Include a few small symmetric
-        # margins so those edges can participate in the unchanged ranking.
+        # Preserve all previous sixth-stage regions for comparison.
         for margin_fraction in (0.025, 0.055, 0.085):
             mx = max(3, int(round(bw * margin_fraction)))
             my = max(3, int(round(bh * margin_fraction)))
             x0, x1 = max(0, left - mx), min(w, right + mx)
             y0, y1 = max(0, top - my), min(h, bottom + my)
-            if x1 - x0 < 48 or y1 - y0 < 96:
-                continue
+            if x1 - x0 >= 48 and y1 - y0 >= 96:
+                candidates.append((
+                    '第六階段｜邊界精修 ' + str(round(margin_fraction * 100, 1)) + '%',
+                    img.crop((x0, y0, x1, y1)),
+                ))
+
+        # Search outward for a coherent vertical/horizontal frame edge.
+        # Median over the central span suppresses isolated UI/text edges.
+        y0 = max(0, top + int(bh * 0.12))
+        y1 = min(h, bottom - int(bh * 0.12))
+        x0 = max(0, left + int(bw * 0.12))
+        x1 = min(w, right - int(bw * 0.12))
+        if y1 - y0 < 32 or x1 - x0 < 32:
+            continue
+        vertical = np.median(
+            np.abs(np.diff(gray[y0:y1, :], axis=1)), axis=0
+        )
+        horizontal = np.median(
+            np.abs(np.diff(gray[:, x0:x1], axis=0)), axis=1
+        )
+
+        def outward_edge(seed, direction, strength, max_distance, bound):
+            # Require a visible, coherent edge; otherwise use the seed.
+            indices = [
+                seed + direction * offset
+                for offset in range(1, max_distance + 1)
+                if 1 <= seed + direction * offset < bound
+            ]
+            if not indices:
+                return seed
+            best = max(indices, key=lambda pos: float(strength[pos - 1]))
+            if float(strength[best - 1]) < 0.055:
+                return seed
+            return best
+
+        dx = max(3, int(bw * 0.12))
+        dy = max(3, int(bh * 0.12))
+        edge_left = outward_edge(left, -1, vertical, dx, w)
+        edge_right = outward_edge(right, 1, vertical, dx, w)
+        edge_top = outward_edge(top, -1, horizontal, dy, h)
+        edge_bottom = outward_edge(bottom, 1, horizontal, dy, h)
+        # Add a small safety border for antialiasing, not a broad crop.
+        box = (
+            max(0, edge_left - 2), max(0, edge_top - 2),
+            min(w, edge_right + 2), min(h, edge_bottom + 2),
+        )
+        rw, rh = box[2] - box[0], box[3] - box[1]
+        if rw >= 48 and rh >= 96 and 0.35 <= rw / rh <= 0.85:
             candidates.append((
-                '第六階段｜邊界精修 ' + str(round(margin_fraction * 100, 1)) + '%',
-                img.crop((x0, y0, x1, y1)),
+                '第六階段｜邊緣導向精確定位',
+                img.crop(box),
             ))
     return candidates
 

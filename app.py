@@ -1360,6 +1360,18 @@ with result_col:
                         hide_index=True,
                         use_container_width=True,
                     )
+                    st.markdown('**Phase 8｜CG-0001 與 PA-0029 誤判對照（唯讀）**')
+                    comparison = diagnostic_competitor_comparison(
+                        query_image, index,
+                        target_id='CG-0001',
+                        competitor_id='PA-0029',
+                    )
+                    if len(comparison) == 2:
+                        st.dataframe(comparison, hide_index=True, use_container_width=True)
+                        gap = comparison[1]['最終分數'] - comparison[0]['最終分數']
+                        st.caption(f'PA-0029 相對 CG-0001 分數差：{gap:+.2f} 分。此診斷不修改排名。')
+                    else:
+                        st.caption('未能同時取得兩款遊戲的分數；請確認 PA-0029 是否仍在前五名。')
                     st.markdown('**第二階段｜尺寸及長寬比**')
                     st.write(
                         f"查詢圖片：{aspect_audit['query_size'][0]} × "

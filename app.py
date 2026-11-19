@@ -832,6 +832,38 @@ def diagnostic_score_breakdown(query, index, target_id='CG-0001'):
     return selected
 
 
+def diagnostic_competitor_comparison(query, index, target_id='CG-0001', competitor_id='PA-0029'):
+    """Read-only comparison of target and a suspected false positive.
+
+    Reuses the exact best-region scores from the current search pipeline.
+    Does not alter ranking, candidate generation, or scoring weights.
+    """
+    rows = diagnostic_score_breakdown(query, index, target_id=target_id)
+    # The existing breakdown returns top five plus the target; the competitor
+    # is included only when it is among the top five.
+    selected = {row['id']: row for row in rows
+                if row['id'] in (target_id, competitor_id)}
+    result = []
+    for game_id in (target_id, competitor_id):
+        row = selected.get(game_id)
+        if row is None:
+            continue
+        result.append({
+            '遊戲 ID': row['id'],
+            '遊戲名稱': row['name'],
+            '最佳區域': row['region'],
+            '結構原始分': round(row['structural'] * 100, 2),
+            '雜湊原始分': round(row['hash'] * 100, 2),
+            '色彩原始分': round(row['color'] * 100, 2),
+            '結構貢獻(48%)': round(row['structural'] * 48, 2),
+            '雜湊貢獻(32%)': round(row['hash'] * 32, 2),
+            '色彩貢獻(20%)': round(row['color'] * 20, 2),
+            '區域扣分': round(row['penalty'] * 100, 2),
+            '最終分數': round(row['score'] * 100, 2),
+        })
+    return result
+
+
 def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
     """Inspect source dimensions and letterboxing without changing matching."""
     game = next(
@@ -1328,6 +1360,18 @@ with result_col:
                         hide_index=True,
                         use_container_width=True,
                     )
+                    st.markdown('**Phase 8｜CG-0001 與 PA-0029 誤判對照（唯讀）**')
+                    comparison = diagnostic_competitor_comparison(
+                        query_image, index,
+                        target_id='CG-0001',
+                        competitor_id='PA-0029',
+                    )
+                    if len(comparison) == 2:
+                        st.dataframe(comparison, hide_index=True, use_container_width=True)
+                        gap = comparison[1]['最終分數'] - comparison[0]['最終分數']
+                        st.caption(f'PA-0029 相對 CG-0001 分數差：{gap:+.2f} 分。此診斷不修改排名。')
+                    else:
+                        st.caption('未能同時取得兩款遊戲的分數；請確認 PA-0029 是否仍在前五名。')
                     st.markdown('**第二階段｜尺寸及長寬比**')
                     st.write(
                         f"查詢圖片：{aspect_audit['query_size'][0]} × "

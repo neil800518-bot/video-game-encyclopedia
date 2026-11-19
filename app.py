@@ -527,6 +527,72 @@ def diagnostic_image_match(query, index, target_id='CG-0001'):
     return details
 
 
+
+def diagnostic_final_ranking(query, index, target_id='CG-0001'):
+    """Read-only audit of the existing best-region ranking, with no score changes."""
+    regions = []
+    area = max(1, query.width * query.height)
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        regions.append((label, image_features(region), penalty))
+
+    results = []
+    for game, features in index:
+        if not regions:
+            continue
+        score, label = max(
+            ((similarity(candidate, features) - penalty, label)
+             for label, candidate, penalty in regions),
+            key=lambda value: value[0],
+        )
+        results.append({
+            'id': str(game.get('id', '')).strip(),
+            'name': str(game.get('name', '')),
+            'score': max(0.0, score),
+            'region': label,
+        })
+    results.sort(key=lambda item: item['score'], reverse=True)
+    target = next(
+        ((position, item) for position, item in enumerate(results, 1)
+         if item['id'] == target_id),
+        None,
+    )
+    return {
+        'target': target,
+        'top_five': results[:5],
+        'total': len(results),
+    }
+
+
+def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
+    """Inspect source dimensions and letterboxing without changing matching."""
+    game = next(
+        (game for game, _ in index
+         if str(game.get('id', '')).strip() == target_id),
+        None,
+    )
+    output = {
+        'query_size': query.size,
+        'query_ratio': query.width / max(1, query.height),
+        'source_size': None,
+        'source_ratio': None,
+    }
+    if game is None:
+        return output
+    path = safe_image_path(game)
+    if path is None:
+        return output
+    try:
+        with Image.open(path) as image:
+            oriented = oriented_game_image(image, game)
+            output['source_size'] = oriented.size
+            output['source_ratio'] = oriented.width / max(1, oriented.height)
+    except (OSError, ValueError, UnidentifiedImageError):
+        pass
+    return output
+
+
 def decode_pasted_image(data):
     if (
         not isinstance(data, str)
@@ -941,6 +1007,47 @@ with result_col:
                     else:
                         tw, th = diagnostic['trimmed_size']
                         st.write(f'白邊裁切：已觸發，裁切後 {tw} × {th}')
+                    final_audit = diagnostic_final_ranking(query_image, index)
+                    aspect_audit = diagnostic_aspect_ratio(query_image, index)
+                    st.markdown('**第二階段｜最終排序稽核（唯讀）**')
+                    target_final = final_audit['target']
+                    if target_final is None:
+                        st.warning('CG-0001 未出現在最終排序索引。')
+                    else:
+                        final_position, final_item = target_final
+                        st.write(
+                            f"CG-0001 最終排名：{final_position} / {final_audit['total']}；"
+                            f"最高分：{final_item['score'] * 100:.1f}/100；"
+                            f"最佳區域：{final_item['region']}"
+                        )
+                    st.dataframe(
+                        [
+                            {
+                                '最終排名': i,
+                                '遊戲 ID': item['id'],
+                                '遊戲名稱': item['name'],
+                                '最高分': round(item['score'] * 100, 1),
+                                '最佳區域': item['region'],
+                            }
+                            for i, item in enumerate(final_audit['top_five'], 1)
+                        ],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    st.markdown('**第二階段｜尺寸及長寬比**')
+                    st.write(
+                        f"查詢圖片：{aspect_audit['query_size'][0]} × "
+                        f"{aspect_audit['query_size'][1]}；"
+                        f"寬高比：{aspect_audit['query_ratio']:.3f}"
+                    )
+                    if aspect_audit['source_size'] is not None:
+                        sw, sh = aspect_audit['source_size']
+                        st.write(
+                            f"CG-0001 索引原圖：{sw} × {sh}；"
+                            f"寬高比：{aspect_audit['source_ratio']:.3f}；"
+                            f"比例差：{abs(aspect_audit['query_ratio'] - aspect_audit['source_ratio']):.3f}"
+                        )
+                    st.caption('上述資訊僅供診斷；未變更搜尋特徵、權重、裁切或排序。')
                     if not diagnostic['target_found']:
                         st.warning('CG-0001 不在目前可搜尋的圖片索引中。')
                     else:

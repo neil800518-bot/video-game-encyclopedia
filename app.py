@@ -780,6 +780,58 @@ def diagnostic_final_ranking(query, index, target_id='CG-0001'):
     }
 
 
+def diagnostic_score_breakdown(query, index, target_id='CG-0001'):
+    """Read-only breakdown of each game's existing best-region score.
+
+    Uses the same regions, penalty, and tie behavior as final ranking.
+    Does not modify the search pipeline or its weights.
+    """
+    area = max(1, query.width * query.height)
+    regions = []
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        regions.append((label, image_features(region), penalty))
+
+    rows = []
+    for game, features in index:
+        if not regions:
+            continue
+        best = None
+        for label, candidate, penalty in regions:
+            gray_a, hash_a, hist_a = candidate
+            gray_b, hash_b, hist_b = features
+            structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(structural):
+                structural = 0.0
+            structural = max(0.0, structural)
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            raw = similarity(candidate, features)
+            adjusted = raw - penalty
+            if best is None or adjusted > best['adjusted']:
+                best = {
+                    'id': str(game.get('id', '')).strip(),
+                    'name': str(game.get('name', '')),
+                    'region': label,
+                    'structural': structural,
+                    'hash': hash_score,
+                    'color': color_score,
+                    'penalty': penalty,
+                    'raw': raw,
+                    'adjusted': adjusted,
+                    'score': max(0.0, adjusted),
+                }
+        rows.append(best)
+
+    rows.sort(key=lambda row: row['score'], reverse=True)
+    selected = rows[:5]
+    target = next((row for row in rows if row['id'] == target_id), None)
+    if target is not None and all(row['id'] != target_id for row in selected):
+        selected.append(target)
+    return selected
+
+
 def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
     """Inspect source dimensions and letterboxing without changing matching."""
     game = next(
@@ -1245,6 +1297,33 @@ with result_col:
                                 '最佳區域': item['region'],
                             }
                             for i, item in enumerate(final_audit['top_five'], 1)
+                        ],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    st.markdown('**第七階段｜相似度分數拆解（唯讀）**')
+                    st.caption(
+                        '顯示前五名及 CG-0001 各自最佳區域的原始特徵分數；'
+                        '權重固定為結構 48%、雜湊 32%、色彩 20%。'
+                        '最終分數 = max(0, 加權分數 − 區域面積扣分)。'
+                        '此表不影響實際搜尋、裁切或排名。'
+                    )
+                    breakdown = diagnostic_score_breakdown(query_image, index)
+                    st.dataframe(
+                        [
+                            {
+                                '遊戲 ID': item['id'],
+                                '最佳區域': item['region'],
+                                '結構原始分': round(item['structural'] * 100, 2),
+                                '雜湊原始分': round(item['hash'] * 100, 2),
+                                '色彩原始分': round(item['color'] * 100, 2),
+                                '結構貢獻(48%)': round(item['structural'] * 48, 2),
+                                '雜湊貢獻(32%)': round(item['hash'] * 32, 2),
+                                '色彩貢獻(20%)': round(item['color'] * 20, 2),
+                                '面積扣分': round(item['penalty'] * 100, 2),
+                                '最終分數': round(item['score'] * 100, 2),
+                            }
+                            for item in breakdown
                         ],
                         hide_index=True,
                         use_container_width=True,

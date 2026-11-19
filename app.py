@@ -1094,6 +1094,97 @@ def diagnostic_phase11_region_stability(query, index, target_id='CG-0001', compe
             'top_fives': top_fives, 'region_count': len(candidates)}
 
 
+
+def diagnostic_phase12_structure(query, index, target_id='CG-0001', competitor_id='DB-0041'):
+    """Read-only structure-correlation diagnostics and full-index counterfactuals.
+
+    Baseline reproduces Phase 11 best-region C weights. Alternatives change
+    only the treatment of negative structural correlations.
+    """
+    area = max(1, query.width * query.height)
+    candidates = []
+    for position, (label, region) in enumerate(query_regions(query), 1):
+        penalty = 0.025 * (1 - min(1.0, region.width * region.height / area))
+        candidates.append((position, label, image_features(region), penalty))
+    variants = ('C 原始截斷', '負相關映射至 0–1', '保留負相關貢獻')
+    ranked = {variant: [] for variant in variants}
+    audit = []
+    for game, features in index:
+        game_id = str(game.get('id', '')).strip()
+        gray_b, hash_b, hist_b = features
+        best = {variant: None for variant in variants}
+        negative_count = 0
+        for position, label, candidate, penalty in candidates:
+            gray_a, hash_a, hist_a = candidate
+            raw = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(raw):
+                raw = 0.0
+            raw = max(-1.0, min(1.0, raw))
+            if raw < 0:
+                negative_count += 1
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            structural_options = (max(0.0, raw), (raw + 1.0) / 2.0, raw)
+            for variant, structural in zip(variants, structural_options):
+                score = max(0.0, 0.25 * structural
+                            + 0.25 * hash_score + 0.50 * color_score - penalty)
+                if best[variant] is None or score > best[variant]['score']:
+                    best[variant] = {
+                        'score': score, 'region': label, 'position': position,
+                        'raw': raw, 'structural': structural,
+                        'hash': hash_score, 'color': color_score,
+                        'penalty': penalty,
+                    }
+            if game_id in (target_id, competitor_id):
+                audit.append({
+                    '遊戲 ID': game_id, '候選序號': position, '區域': label,
+                    '原始相關係數': round(raw, 4),
+                    '是否負相關': raw < 0,
+                    '原始截斷後結構': round(max(0.0, raw) * 100, 2),
+                    '映射後結構': round((raw + 1.0) * 50, 2),
+                    '雜湊': round(hash_score * 100, 2),
+                    '色彩': round(color_score * 100, 2),
+                })
+        for variant in variants:
+            item = best[variant]
+            ranked[variant].append({
+                'id': game_id, 'name': str(game.get('name', '')),
+                'score': item['score'] if item else 0.0,
+                'region': item['region'] if item else '',
+                'position': item['position'] if item else None,
+                'raw': item['raw'] if item else 0.0,
+                'negative_count': negative_count,
+            })
+    summary, top_fives = [], {}
+    baseline_ranks = {}
+    for variant in variants:
+        rows = sorted(ranked[variant], key=lambda row: row['score'], reverse=True)
+        for rank, row in enumerate(rows, 1):
+            row['rank'] = rank
+        if variant == variants[0]:
+            baseline_ranks = {row['id']: row['rank'] for row in rows}
+        top_fives[variant] = [{
+            '排名': row['rank'], '遊戲 ID': row['id'],
+            '遊戲名稱': row['name'], '分數': round(row['score'] * 100, 2),
+            '最佳區域': row['region'],
+        } for row in rows[:5]]
+        for game_id in (target_id, competitor_id):
+            row = next((item for item in rows if item['id'] == game_id), None)
+            summary.append({
+                '結構處理方式': variant, '索引圖片數': len(rows),
+                '遊戲 ID': game_id,
+                '排名': row['rank'] if row else None,
+                '分數': round(row['score'] * 100, 2) if row else None,
+                '相對基準排名提升': baseline_ranks.get(game_id, 0) - row['rank']
+                    if row and game_id in baseline_ranks else None,
+                '負相關區域數': row['negative_count'] if row else None,
+                '最佳區域原始相關係數': round(row['raw'], 4) if row else None,
+                '最佳區域': row['region'] if row else '未找到',
+            })
+    return {'summary': summary, 'audit': audit, 'top_fives': top_fives,
+            'region_count': len(candidates)}
+
+
 def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
     """Inspect source dimensions and letterboxing without changing matching."""
     game = next(
@@ -1714,6 +1805,29 @@ with result_col:
                         'Top 3 / Top 5 是同一張查詢圖片的候選區域平均，'
                         '不代表獨立圖片的驗證準確率；'
                         '重複名稱的區域仍視為不同候選位置。'
+                    )
+
+                    st.markdown('**Phase 12｜結構相似度異常分析（唯讀）**')
+                    st.caption(
+                        '比較原始負相關截斷、負相關映射及保留負相關貢獻；'
+                        '固定 C 方案其他權重、候選區域與面積扣分。'
+                        '僅為反事實模擬，不修改正式搜尋。'
+                    )
+                    phase12 = diagnostic_phase12_structure(query_image, index)
+                    st.write(f"每款遊戲評估 {phase12['region_count']} 個候選區域。")
+                    st.dataframe(
+                        phase12['summary'], hide_index=True, use_container_width=True
+                    )
+                    with st.expander('Phase 12｜兩款遊戲全部區域原始相關係數', expanded=False):
+                        st.dataframe(
+                            phase12['audit'], hide_index=True, use_container_width=True
+                        )
+                    for variant, rows in phase12['top_fives'].items():
+                        with st.expander(f'Phase 12｜{variant}｜前五名', expanded=False):
+                            st.dataframe(rows, hide_index=True, use_container_width=True)
+                    st.caption(
+                        '負相關映射會改變結構分數尺度；保留負相關則允許負貢獻。'
+                        '兩者均非已驗證改善方案，須用多張獨立標註圖片評估。'
                     )
                     st.markdown('**第二階段｜尺寸及長寬比**')
                     st.write(

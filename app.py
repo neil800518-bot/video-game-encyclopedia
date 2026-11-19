@@ -477,6 +477,71 @@ def locate_portrait_game_regions(img):
     return candidates
 
 
+def refine_portrait_game_boundaries(img):
+    """Optional phase-six boundary candidates around phase-five detections.
+
+    Use the existing portrait detector as a seed, then probe modestly expanded
+    bounds.  This does not replace earlier regions or alter similarity scores.
+    """
+    w, h = img.size
+    if w < 700 or w / max(1, h) < 1.15:
+        return []
+
+    # Reuse phase-five candidates, but locate their original pixels by matching
+    # the candidate's RGB content against a small neighborhood is unreliable.
+    # Instead recover the same projection runs and derive conservative bounds.
+    rgb = np.asarray(img, dtype=np.float32) / 255.0
+    hi, lo = rgb.max(axis=2), rgb.min(axis=2)
+    ink = ((hi - lo) > 0.16) & (lo < 0.76)
+    start_y, end_y = int(h * 0.16), int(h * 0.88)
+    density = np.convolve(
+        ink[start_y:end_y].mean(axis=0),
+        np.ones(9, dtype=np.float32) / 9.0,
+        mode='same',
+    )
+    active = density > 0.24
+    runs, start = [], None
+    for x in range(w + 1):
+        occupied = x < w and bool(active[x])
+        if occupied and start is None:
+            start = x
+        elif not occupied and start is not None:
+            if int(w * 0.14) <= x - start <= int(w * 0.40):
+                runs.append((start, x))
+            start = None
+
+    candidates = []
+    for left, right in sorted(
+        runs, key=lambda pair: -float(density[pair[0]:pair[1]].mean())
+    )[:3]:
+        row_density = ink[:, left:right].mean(axis=1)
+        ys = np.flatnonzero(row_density > 0.25)
+        if len(ys) < int(h * 0.42):
+            continue
+        top, bottom = int(ys[0]), int(ys[-1]) + 1
+        bw, bh = right - left, bottom - top
+        if not (int(h * 0.40) <= bh <= int(h * 0.95)):
+            continue
+        if not (0.35 <= bw / max(1, bh) <= 0.85):
+            continue
+
+        # Phase five uses a tight colorful-content box. Real game screens may
+        # contain dark or low-saturation edges. Include a few small symmetric
+        # margins so those edges can participate in the unchanged ranking.
+        for margin_fraction in (0.025, 0.055, 0.085):
+            mx = max(3, int(round(bw * margin_fraction)))
+            my = max(3, int(round(bh * margin_fraction)))
+            x0, x1 = max(0, left - mx), min(w, right + mx)
+            y0, y1 = max(0, top - my), min(h, bottom + my)
+            if x1 - x0 < 48 or y1 - y0 < 96:
+                continue
+            candidates.append((
+                '第六階段｜邊界精修 ' + str(round(margin_fraction * 100, 1)) + '%',
+                img.crop((x0, y0, x1, y1)),
+            ))
+    return candidates
+
+
 def query_regions(img):
     img = prepare_image(img)
     w, h = img.size
@@ -542,6 +607,8 @@ def query_regions(img):
 
     # Phase 5: content-aware candidates; original candidates stay untouched.
     regions.extend(locate_portrait_game_regions(img))
+    # Phase six only adds boundary candidates; no existing candidate is removed.
+    regions.extend(refine_portrait_game_boundaries(img))
     return regions
 
 

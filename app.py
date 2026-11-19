@@ -462,6 +462,24 @@ def query_regions(img):
             )
         )
 
+    # v3 phase 4: additional portrait-window candidates for full browser
+    # screenshots. Existing candidates and similarity weights remain intact.
+    # These windows cover a game occupying roughly a quarter of a desktop
+    # screenshot, including a surrounding browser/DevTools interface.
+    if w >= 700 and w / max(1, h) >= 1.15:
+        for width_fraction in (0.23, 0.30):
+            window_w = int(w * width_fraction)
+            for left_fraction in (0.16, 0.24, 0.32, 0.40):
+                left = min(w - window_w, int(w * left_fraction))
+                for top_fraction in (0.12, 0.20):
+                    top = int(h * top_fraction)
+                    window_h = min(h - top, int(h * 0.70))
+                    if window_w >= 48 and window_h >= 96:
+                        regions.append((
+                            '第四階段｜直向遊戲定位候選',
+                            img.crop((left, top, left + window_w, top + window_h)),
+                        ))
+
     return regions
 
 

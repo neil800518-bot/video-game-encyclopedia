@@ -359,11 +359,246 @@ def build_image_index():
     return entries
 
 
+def remove_thumbnail_padding(img):
+    """Conservatively remove near-white overview-thumbnail side padding.
+
+    Accept either two white side bands or four-sided white padding.
+    Never crop a single side, and leave ordinary screenshots unchanged.
+    """
+    img = prepare_image(img)
+    if img.width < 48 or img.height < 48:
+        return None
+
+    rgb = np.asarray(img, dtype=np.uint8)
+    white = np.all(rgb >= 245, axis=2)
+    h, w = white.shape
+
+    # Count consecutive near-white columns from each side. A column must
+    # be almost entirely white, not just white at its corners.
+    column_white = white.mean(axis=0) >= 0.98
+    left = 0
+    while left < w and column_white[left]:
+        left += 1
+    right = w
+    while right > left and column_white[right - 1]:
+        right -= 1
+
+    # Require meaningful padding on BOTH sides. Limit the amount removed
+    # to avoid treating a mostly-white screenshot as a thumbnail canvas.
+    min_band = max(3, int(round(w * 0.015)))
+    if not (min_band <= left <= int(w * 0.30)
+            and min_band <= w - right <= int(w * 0.30)):
+        return None
+
+    # The inner edges should be substantially more colorful than the
+    # padding, which guards against cropping plain light game screens.
+    if right - left < 32:
+        return None
+    inner = white[:, left:right]
+    if float((~inner).mean()) < 0.20:
+        return None
+
+    # Optionally remove top/bottom near-white rows inside the content
+    # width; neither is required for side-padding detection.
+    row_white = white[:, left:right].mean(axis=1) >= 0.98
+    top = 0
+    while top < h and row_white[top]:
+        top += 1
+    bottom = h
+    while bottom > top and row_white[bottom - 1]:
+        bottom -= 1
+    if top > int(h * 0.20):
+        top = 0
+    if h - bottom > int(h * 0.20):
+        bottom = h
+    if bottom - top < 32:
+        return None
+
+    return img.crop((left, top, right, bottom))
+
+
+
+def locate_portrait_game_regions(img):
+    """Find dense portrait content inside a wide browser screenshot.
+
+    This is an optional candidate generator, not a replacement for the
+    existing matching features or scoring. Reject ambiguous/light layouts.
+    """
+    w, h = img.size
+    if w < 700 or w / max(1, h) < 1.15:
+        return []
+
+    rgb = np.asarray(img, dtype=np.float32) / 255.0
+    hi = rgb.max(axis=2)
+    lo = rgb.min(axis=2)
+    chroma = hi - lo
+    # Dense game artwork is usually colorful and nonwhite, unlike browser UI.
+    ink = (chroma > 0.16) & (lo < 0.76)
+    row_start, row_end = int(h * 0.16), int(h * 0.88)
+    column_density = ink[row_start:row_end].mean(axis=0)
+    kernel = np.ones(9, dtype=np.float32) / 9.0
+    smoothed = np.convolve(column_density, kernel, mode='same')
+    active = smoothed > 0.24
+
+    runs = []
+    start = None
+    for x in range(w + 1):
+        occupied = x < w and bool(active[x])
+        if occupied and start is None:
+            start = x
+        elif not occupied and start is not None:
+            if int(w * 0.14) <= x - start <= int(w * 0.40):
+                runs.append((start, x))
+            start = None
+
+    candidates = []
+    for left, right in sorted(
+        runs, key=lambda pair: -float(smoothed[pair[0]:pair[1]].mean())
+    )[:3]:
+        # Recover vertical content boundaries using the same conservative mask.
+        row_density = ink[:, left:right].mean(axis=1)
+        ys = np.flatnonzero(row_density > 0.25)
+        if len(ys) < int(h * 0.42):
+            continue
+        top, bottom = int(ys[0]), int(ys[-1]) + 1
+        if not (int(h * 0.40) <= bottom - top <= int(h * 0.95)):
+            continue
+        if not (0.35 <= (right - left) / (bottom - top) <= 0.85):
+            continue
+        # Include a small boundary margin for antialiased game edges.
+        margin_x = max(2, int(w * 0.004))
+        margin_y = max(2, int(h * 0.004))
+        box = (max(0, left - margin_x), max(0, top - margin_y),
+               min(w, right + margin_x), min(h, bottom + margin_y))
+        candidates.append((
+            '第五階段｜自動定位直向遊戲',
+            img.crop(box),
+        ))
+    return candidates
+
+
+def refine_portrait_game_boundaries(img):
+    """Add edge-guided portrait bounds without changing existing scoring.
+
+    The fifth-stage color mask supplies the seed.  A local image-gradient
+    search then looks for dark/low-saturation frame edges which that mask
+    can miss.  Legacy phase-six margin candidates are retained.
+    """
+    w, h = img.size
+    if w < 700 or w / max(1, h) < 1.15:
+        return []
+
+    rgb = np.asarray(img, dtype=np.float32) / 255.0
+    hi, lo = rgb.max(axis=2), rgb.min(axis=2)
+    ink = ((hi - lo) > 0.16) & (lo < 0.76)
+    start_y, end_y = int(h * 0.16), int(h * 0.88)
+    density = np.convolve(
+        ink[start_y:end_y].mean(axis=0),
+        np.ones(9, dtype=np.float32) / 9.0,
+        mode='same',
+    )
+    active = density > 0.24
+    runs, start = [], None
+    for x in range(w + 1):
+        occupied = x < w and bool(active[x])
+        if occupied and start is None:
+            start = x
+        elif not occupied and start is not None:
+            if int(w * 0.14) <= x - start <= int(w * 0.40):
+                runs.append((start, x))
+            start = None
+
+    # Grayscale differences reveal boundaries even when their pixels are
+    # dark or desaturated. Only inspect a narrow band near the color seed.
+    gray = rgb.mean(axis=2)
+    candidates = []
+    for left, right in sorted(
+        runs, key=lambda pair: -float(density[pair[0]:pair[1]].mean())
+    )[:3]:
+        row_density = ink[:, left:right].mean(axis=1)
+        ys = np.flatnonzero(row_density > 0.25)
+        if len(ys) < int(h * 0.42):
+            continue
+        top, bottom = int(ys[0]), int(ys[-1]) + 1
+        bw, bh = right - left, bottom - top
+        if not (int(h * 0.40) <= bh <= int(h * 0.95)):
+            continue
+        if not (0.35 <= bw / max(1, bh) <= 0.85):
+            continue
+
+        # Preserve all previous sixth-stage regions for comparison.
+        for margin_fraction in (0.025, 0.055, 0.085):
+            mx = max(3, int(round(bw * margin_fraction)))
+            my = max(3, int(round(bh * margin_fraction)))
+            x0, x1 = max(0, left - mx), min(w, right + mx)
+            y0, y1 = max(0, top - my), min(h, bottom + my)
+            if x1 - x0 >= 48 and y1 - y0 >= 96:
+                candidates.append((
+                    '第六階段｜邊界精修 ' + str(round(margin_fraction * 100, 1)) + '%',
+                    img.crop((x0, y0, x1, y1)),
+                ))
+
+        # Search outward for a coherent vertical/horizontal frame edge.
+        # Median over the central span suppresses isolated UI/text edges.
+        y0 = max(0, top + int(bh * 0.12))
+        y1 = min(h, bottom - int(bh * 0.12))
+        x0 = max(0, left + int(bw * 0.12))
+        x1 = min(w, right - int(bw * 0.12))
+        if y1 - y0 < 32 or x1 - x0 < 32:
+            continue
+        vertical = np.median(
+            np.abs(np.diff(gray[y0:y1, :], axis=1)), axis=0
+        )
+        horizontal = np.median(
+            np.abs(np.diff(gray[:, x0:x1], axis=0)), axis=1
+        )
+
+        def outward_edge(seed, direction, strength, max_distance, bound):
+            # Require a visible, coherent edge; otherwise use the seed.
+            indices = [
+                seed + direction * offset
+                for offset in range(1, max_distance + 1)
+                if 1 <= seed + direction * offset < bound
+            ]
+            if not indices:
+                return seed
+            best = max(indices, key=lambda pos: float(strength[pos - 1]))
+            if float(strength[best - 1]) < 0.055:
+                return seed
+            return best
+
+        dx = max(3, int(bw * 0.12))
+        dy = max(3, int(bh * 0.12))
+        edge_left = outward_edge(left, -1, vertical, dx, w)
+        edge_right = outward_edge(right, 1, vertical, dx, w)
+        edge_top = outward_edge(top, -1, horizontal, dy, h)
+        edge_bottom = outward_edge(bottom, 1, horizontal, dy, h)
+        # Add a small safety border for antialiasing, not a broad crop.
+        box = (
+            max(0, edge_left - 2), max(0, edge_top - 2),
+            min(w, edge_right + 2), min(h, edge_bottom + 2),
+        )
+        rw, rh = box[2] - box[0], box[3] - box[1]
+        if rw >= 48 and rh >= 96 and 0.35 <= rw / rh <= 0.85:
+            candidates.append((
+                '第六階段｜邊緣導向精確定位',
+                img.crop(box),
+            ))
+    return candidates
+
+
 def query_regions(img):
     img = prepare_image(img)
     w, h = img.size
 
     regions = [('完整截图', img)]
+
+    # Overview cards are letterboxed on a 240x320 white canvas.
+    # Compare their unpadded content as an additional query candidate.
+    unpadded = remove_thumbnail_padding(img)
+    if unpadded is not None:
+        regions.append(('去除总览缩图白边', unpadded))
+
 
     for fraction in (0.28, 0.38, 0.50, 0.65, 0.80):
         crop_w = max(32, int(w * fraction))
@@ -397,6 +632,28 @@ def query_regions(img):
             )
         )
 
+    # v3 phase 4: additional portrait-window candidates for full browser
+    # screenshots. Existing candidates and similarity weights remain intact.
+    # These windows cover a game occupying roughly a quarter of a desktop
+    # screenshot, including a surrounding browser/DevTools interface.
+    if w >= 700 and w / max(1, h) >= 1.15:
+        for width_fraction in (0.23, 0.30):
+            window_w = int(w * width_fraction)
+            for left_fraction in (0.16, 0.24, 0.32, 0.40):
+                left = min(w - window_w, int(w * left_fraction))
+                for top_fraction in (0.12, 0.20):
+                    top = int(h * top_fraction)
+                    window_h = min(h - top, int(h * 0.70))
+                    if window_w >= 48 and window_h >= 96:
+                        regions.append((
+                            '第四階段｜直向遊戲定位候選',
+                            img.crop((left, top, left + window_w, top + window_h)),
+                        ))
+
+    # Phase 5: content-aware candidates; original candidates stay untouched.
+    regions.extend(locate_portrait_game_regions(img))
+    # Phase six only adds boundary candidates; no existing candidate is removed.
+    regions.extend(refine_portrait_game_boundaries(img))
     return regions
 
 
@@ -446,6 +703,514 @@ def rank_image_matches(query, index, limit=5):
         key=lambda item: item[0],
         reverse=True,
     )[:limit]
+
+
+def diagnostic_image_match(query, index, target_id='CG-0001'):
+    """Read-only v3 diagnostics; ranking algorithm remains unchanged."""
+    prepared = prepare_image(query)
+    trimmed = remove_thumbnail_padding(query)
+    all_regions = query_regions(query)
+    target = next(
+        ((game, features) for game, features in index
+         if str(game.get('id', '')).strip() == target_id),
+        None,
+    )
+    details = {
+        'input_size': query.size,
+        'prepared_size': prepared.size,
+        'trimmed_size': trimmed.size if trimmed is not None else None,
+        'target_found': target is not None,
+        'regions': [],
+    }
+    if target is None:
+        return details
+    for label, region in all_regions:
+        features = image_features(region)
+        fraction = region.width * region.height / max(1, query.width * query.height)
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        target_score = max(0.0, similarity(features, target[1]) - penalty)
+        higher = sum(
+            similarity(features, other_features) - penalty > target_score
+            for _, other_features in index
+        )
+        details['regions'].append({
+            'label': label,
+            'size': region.size,
+            'rank': higher + 1,
+            'score': target_score,
+        })
+    return details
+
+
+
+def diagnostic_final_ranking(query, index, target_id='CG-0001'):
+    """Read-only audit of the existing best-region ranking, with no score changes."""
+    regions = []
+    area = max(1, query.width * query.height)
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        regions.append((label, image_features(region), penalty))
+
+    results = []
+    for game, features in index:
+        if not regions:
+            continue
+        score, label = max(
+            ((similarity(candidate, features) - penalty, label)
+             for label, candidate, penalty in regions),
+            key=lambda value: value[0],
+        )
+        results.append({
+            'id': str(game.get('id', '')).strip(),
+            'name': str(game.get('name', '')),
+            'score': max(0.0, score),
+            'region': label,
+        })
+    results.sort(key=lambda item: item['score'], reverse=True)
+    target = next(
+        ((position, item) for position, item in enumerate(results, 1)
+         if item['id'] == target_id),
+        None,
+    )
+    return {
+        'target': target,
+        'top_five': results[:5],
+        'total': len(results),
+    }
+
+
+def diagnostic_score_breakdown(query, index, target_id='CG-0001'):
+    """Read-only breakdown of each game's existing best-region score.
+
+    Uses the same regions, penalty, and tie behavior as final ranking.
+    Does not modify the search pipeline or its weights.
+    """
+    area = max(1, query.width * query.height)
+    regions = []
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        regions.append((label, image_features(region), penalty))
+
+    rows = []
+    for game, features in index:
+        if not regions:
+            continue
+        best = None
+        for label, candidate, penalty in regions:
+            gray_a, hash_a, hist_a = candidate
+            gray_b, hash_b, hist_b = features
+            structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(structural):
+                structural = 0.0
+            structural = max(0.0, structural)
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            raw = similarity(candidate, features)
+            adjusted = raw - penalty
+            if best is None or adjusted > best['adjusted']:
+                best = {
+                    'id': str(game.get('id', '')).strip(),
+                    'name': str(game.get('name', '')),
+                    'region': label,
+                    'structural': structural,
+                    'hash': hash_score,
+                    'color': color_score,
+                    'penalty': penalty,
+                    'raw': raw,
+                    'adjusted': adjusted,
+                    'score': max(0.0, adjusted),
+                }
+        rows.append(best)
+
+    rows.sort(key=lambda row: row['score'], reverse=True)
+    selected = rows[:5]
+    target = next((row for row in rows if row['id'] == target_id), None)
+    if target is not None and all(row['id'] != target_id for row in selected):
+        selected.append(target)
+    return selected
+
+
+def diagnostic_competitor_comparison(query, index, target_id='CG-0001', competitor_id='PA-0029'):
+    """Read-only comparison of target and a suspected false positive.
+
+    Reuses the exact best-region scores from the current search pipeline.
+    Does not alter ranking, candidate generation, or scoring weights.
+    """
+    rows = diagnostic_score_breakdown(query, index, target_id=target_id)
+    # The existing breakdown returns top five plus the target; the competitor
+    # is included only when it is among the top five.
+    selected = {row['id']: row for row in rows
+                if row['id'] in (target_id, competitor_id)}
+    result = []
+    for game_id in (target_id, competitor_id):
+        row = selected.get(game_id)
+        if row is None:
+            continue
+        result.append({
+            '遊戲 ID': row['id'],
+            '遊戲名稱': row['name'],
+            '最佳區域': row['region'],
+            '結構原始分': round(row['structural'] * 100, 2),
+            '雜湊原始分': round(row['hash'] * 100, 2),
+            '色彩原始分': round(row['color'] * 100, 2),
+            '結構貢獻(48%)': round(row['structural'] * 48, 2),
+            '雜湊貢獻(32%)': round(row['hash'] * 32, 2),
+            '色彩貢獻(20%)': round(row['color'] * 20, 2),
+            '區域扣分': round(row['penalty'] * 100, 2),
+            '最終分數': round(row['score'] * 100, 2),
+        })
+    return result
+
+
+
+def diagnostic_weight_simulation(query, index, target_id='CG-0001', competitor_id='PA-0029'):
+    """Compare three hypothetical weights across every game and every region.
+
+    This is a read-only diagnostic; similarity() and production ranking stay intact.
+    """
+    schemes = {
+        'A｜原始設定': (0.48, 0.32, 0.20),
+        'B｜平衡方案': (0.35, 0.30, 0.35),
+        'C｜色彩加強': (0.25, 0.25, 0.50),
+    }
+    area = max(1, query.width * query.height)
+    candidates = []
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        candidates.append((label, image_features(region), penalty))
+
+    output = {}
+    for scheme, weights in schemes.items():
+        rows = []
+        for game, features in index:
+            best = None
+            for label, candidate, penalty in candidates:
+                gray_a, hash_a, hist_a = candidate
+                gray_b, hash_b, hist_b = features
+                structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+                if not np.isfinite(structural):
+                    structural = 0.0
+                structural = max(0.0, structural)
+                hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+                color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+                adjusted = (weights[0] * structural
+                            + weights[1] * hash_score
+                            + weights[2] * color_score - penalty)
+                if best is None or adjusted > best['adjusted']:
+                    best = {
+                        'id': str(game.get('id', '')).strip(),
+                        'name': str(game.get('name', '')),
+                        'region': label,
+                        'structural': structural,
+                        'hash': hash_score,
+                        'color': color_score,
+                        'penalty': penalty,
+                        'adjusted': adjusted,
+                        'score': max(0.0, adjusted),
+                    }
+            if best is not None:
+                rows.append(best)
+        # Python's stable sort preserves index order on equal scores.
+        rows.sort(key=lambda row: row['score'], reverse=True)
+        for rank, row in enumerate(rows, 1):
+            row['rank'] = rank
+        output[scheme] = {
+            'total': len(rows),
+            'rows': rows,
+            'target': next((row for row in rows if row['id'] == target_id), None),
+            'competitor': next((row for row in rows if row['id'] == competitor_id), None),
+        }
+    return output
+
+
+
+def diagnostic_phase10_top1_analysis(query, index, target_id='CG-0001', competitor_id='DB-0041'):
+    """Read-only C-weight false-positive analysis using Phase 9's full ranking."""
+    simulations = diagnostic_weight_simulation(
+        query, index, target_id=target_id, competitor_id=competitor_id
+    )
+    weights = (0.25, 0.25, 0.50)
+    area = max(1, query.width * query.height)
+    target_features = {
+        str(game.get('id', '')).strip(): features
+        for game, features in index
+        if str(game.get('id', '')).strip() in (target_id, competitor_id)
+    }
+    per_region = []
+    for label, region in query_regions(query):
+        candidate = image_features(region)
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        for game_id in (target_id, competitor_id):
+            if game_id not in target_features:
+                continue
+            gray_a, hash_a, hist_a = candidate
+            gray_b, hash_b, hist_b = target_features[game_id]
+            structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(structural):
+                structural = 0.0
+            structural = max(0.0, structural)
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            score = max(0.0, weights[0] * structural
+                        + weights[1] * hash_score
+                        + weights[2] * color_score - penalty)
+            per_region.append({
+                '遊戲 ID': game_id,
+                '比對區域': label,
+                '結構': round(structural * 100, 2),
+                '雜湊': round(hash_score * 100, 2),
+                '色彩': round(color_score * 100, 2),
+                '結構貢獻': round(weights[0] * structural * 100, 2),
+                '雜湊貢獻': round(weights[1] * hash_score * 100, 2),
+                '色彩貢獻': round(weights[2] * color_score * 100, 2),
+                '面積扣分': round(penalty * 100, 2),
+                'C 方案分數': round(score * 100, 2),
+            })
+    c = simulations['C｜色彩加強']
+    target, competitor = c['target'], c['competitor']
+    summary = []
+    for item in (target, competitor):
+        if item is None:
+            continue
+        summary.append({
+            '遊戲 ID': item['id'],
+            'C 方案排名': item['rank'],
+            '最佳區域': item['region'],
+            '結構貢獻': round(item['structural'] * 25, 2),
+            '雜湊貢獻': round(item['hash'] * 25, 2),
+            '色彩貢獻': round(item['color'] * 50, 2),
+            '面積扣分': round(item['penalty'] * 100, 2),
+            'C 方案分數': round(item['score'] * 100, 2),
+        })
+    return {
+        'summary': summary,
+        'per_region': per_region,
+        'total': c['total'],
+        'gap': round((competitor['score'] - target['score']) * 100, 2)
+            if target and competitor else None,
+        'top_five': c['rows'][:5],
+    }
+
+
+
+def diagnostic_phase11_region_stability(query, index, target_id='CG-0001', competitor_id='DB-0041'):
+    """Read-only full-index C-weight ranking with top-k region aggregation.
+
+    Each candidate is evaluated independently; region labels may repeat, so
+    unique candidate positions (not labels) define the observations.
+    """
+    weights = (0.25, 0.25, 0.50)
+    area = max(1, query.width * query.height)
+    candidates = []
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        candidates.append((label, image_features(region), penalty))
+    strategies = ('最佳區域', 'Top 3 區域平均', 'Top 5 區域平均')
+    rankings = {name: [] for name in strategies}
+    details = []
+    for game, features in index:
+        game_id = str(game.get('id', '')).strip()
+        region_scores = []
+        gray_b, hash_b, hist_b = features
+        for label, candidate, penalty in candidates:
+            gray_a, hash_a, hist_a = candidate
+            structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(structural):
+                structural = 0.0
+            structural = max(0.0, structural)
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            score = max(0.0, weights[0] * structural
+                        + weights[1] * hash_score
+                        + weights[2] * color_score - penalty)
+            region_scores.append((score, label))
+        region_scores.sort(key=lambda item: item[0], reverse=True)
+        for name, k in zip(strategies, (1, 3, 5)):
+            top = region_scores[:k]
+            value = sum(item[0] for item in top) / len(top) if top else 0.0
+            rankings[name].append({
+                'id': game_id,
+                'name': str(game.get('name', '')),
+                'score': value,
+                'best_region': region_scores[0][1] if region_scores else '',
+                'top_count': len(top),
+            })
+        if game_id in (target_id, competitor_id):
+            details.append({
+                '遊戲 ID': game_id,
+                '候選區域數': len(region_scores),
+                '最高分': round(region_scores[0][0] * 100, 2) if region_scores else None,
+                'Top 3 平均': round(
+                    sum(item[0] for item in region_scores[:3])
+                    / max(1, len(region_scores[:3])) * 100, 2
+                ),
+                'Top 5 平均': round(
+                    sum(item[0] for item in region_scores[:5])
+                    / max(1, len(region_scores[:5])) * 100, 2
+                ),
+                '最高與 Top 5 差距': round(
+                    (region_scores[0][0] -
+                     sum(item[0] for item in region_scores[:5])
+                     / max(1, len(region_scores[:5]))) * 100, 2
+                ) if region_scores else None,
+            })
+    summary = []
+    top_fives = {}
+    baseline_ranks = {}
+    for name in strategies:
+        rows = rankings[name]
+        rows.sort(key=lambda item: item['score'], reverse=True)
+        for rank, row in enumerate(rows, 1):
+            row['rank'] = rank
+        if name == strategies[0]:
+            baseline_ranks = {row['id']: row['rank'] for row in rows}
+        top_fives[name] = [{
+            '排名': row['rank'],
+            '遊戲 ID': row['id'],
+            '遊戲名稱': row['name'],
+            '分數': round(row['score'] * 100, 2),
+            '最佳區域': row['best_region'],
+        } for row in rows[:5]]
+        for game_id in (target_id, competitor_id):
+            row = next((item for item in rows if item['id'] == game_id), None)
+            summary.append({
+                '策略': name,
+                '索引圖片數': len(rows),
+                '遊戲 ID': game_id,
+                '排名': row['rank'] if row else None,
+                '分數': round(row['score'] * 100, 2) if row else None,
+                '相對最佳區域排名提升': (
+                    baseline_ranks[game_id] - row['rank']
+                    if row and game_id in baseline_ranks else None
+                ),
+                '最佳區域': row['best_region'] if row else '未找到',
+            })
+    return {'summary': summary, 'details': details,
+            'top_fives': top_fives, 'region_count': len(candidates)}
+
+
+
+def diagnostic_phase12_structure(query, index, target_id='CG-0001', competitor_id='DB-0041'):
+    """Read-only structure-correlation diagnostics and full-index counterfactuals.
+
+    Baseline reproduces Phase 11 best-region C weights. Alternatives change
+    only the treatment of negative structural correlations.
+    """
+    area = max(1, query.width * query.height)
+    candidates = []
+    for position, (label, region) in enumerate(query_regions(query), 1):
+        penalty = 0.025 * (1 - min(1.0, region.width * region.height / area))
+        candidates.append((position, label, image_features(region), penalty))
+    variants = ('C 原始截斷', '負相關映射至 0–1', '保留負相關貢獻')
+    ranked = {variant: [] for variant in variants}
+    audit = []
+    for game, features in index:
+        game_id = str(game.get('id', '')).strip()
+        gray_b, hash_b, hist_b = features
+        best = {variant: None for variant in variants}
+        negative_count = 0
+        for position, label, candidate, penalty in candidates:
+            gray_a, hash_a, hist_a = candidate
+            raw = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(raw):
+                raw = 0.0
+            raw = max(-1.0, min(1.0, raw))
+            if raw < 0:
+                negative_count += 1
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            structural_options = (max(0.0, raw), (raw + 1.0) / 2.0, raw)
+            for variant, structural in zip(variants, structural_options):
+                score = max(0.0, 0.25 * structural
+                            + 0.25 * hash_score + 0.50 * color_score - penalty)
+                if best[variant] is None or score > best[variant]['score']:
+                    best[variant] = {
+                        'score': score, 'region': label, 'position': position,
+                        'raw': raw, 'structural': structural,
+                        'hash': hash_score, 'color': color_score,
+                        'penalty': penalty,
+                    }
+            if game_id in (target_id, competitor_id):
+                audit.append({
+                    '遊戲 ID': game_id, '候選序號': position, '區域': label,
+                    '原始相關係數': round(raw, 4),
+                    '是否負相關': raw < 0,
+                    '原始截斷後結構': round(max(0.0, raw) * 100, 2),
+                    '映射後結構': round((raw + 1.0) * 50, 2),
+                    '雜湊': round(hash_score * 100, 2),
+                    '色彩': round(color_score * 100, 2),
+                })
+        for variant in variants:
+            item = best[variant]
+            ranked[variant].append({
+                'id': game_id, 'name': str(game.get('name', '')),
+                'score': item['score'] if item else 0.0,
+                'region': item['region'] if item else '',
+                'position': item['position'] if item else None,
+                'raw': item['raw'] if item else 0.0,
+                'negative_count': negative_count,
+            })
+    summary, top_fives = [], {}
+    baseline_ranks = {}
+    for variant in variants:
+        rows = sorted(ranked[variant], key=lambda row: row['score'], reverse=True)
+        for rank, row in enumerate(rows, 1):
+            row['rank'] = rank
+        if variant == variants[0]:
+            baseline_ranks = {row['id']: row['rank'] for row in rows}
+        top_fives[variant] = [{
+            '排名': row['rank'], '遊戲 ID': row['id'],
+            '遊戲名稱': row['name'], '分數': round(row['score'] * 100, 2),
+            '最佳區域': row['region'],
+        } for row in rows[:5]]
+        for game_id in (target_id, competitor_id):
+            row = next((item for item in rows if item['id'] == game_id), None)
+            summary.append({
+                '結構處理方式': variant, '索引圖片數': len(rows),
+                '遊戲 ID': game_id,
+                '排名': row['rank'] if row else None,
+                '分數': round(row['score'] * 100, 2) if row else None,
+                '相對基準排名提升': baseline_ranks.get(game_id, 0) - row['rank']
+                    if row and game_id in baseline_ranks else None,
+                '負相關區域數': row['negative_count'] if row else None,
+                '最佳區域原始相關係數': round(row['raw'], 4) if row else None,
+                '最佳區域': row['region'] if row else '未找到',
+            })
+    return {'summary': summary, 'audit': audit, 'top_fives': top_fives,
+            'region_count': len(candidates)}
+
+
+def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
+    """Inspect source dimensions and letterboxing without changing matching."""
+    game = next(
+        (game for game, _ in index
+         if str(game.get('id', '')).strip() == target_id),
+        None,
+    )
+    output = {
+        'query_size': query.size,
+        'query_ratio': query.width / max(1, query.height),
+        'source_size': None,
+        'source_ratio': None,
+    }
+    if game is None:
+        return output
+    path = safe_image_path(game)
+    if path is None:
+        return output
+    try:
+        with Image.open(path) as image:
+            oriented = oriented_game_image(image, game)
+            output['source_size'] = oriented.size
+            output['source_ratio'] = oriented.width / max(1, oriented.height)
+    except (OSError, ValueError, UnidentifiedImageError):
+        pass
+    return output
 
 
 def decode_pasted_image(data):
@@ -851,6 +1616,249 @@ with result_col:
                     index = build_image_index()
                     ranked = rank_image_matches(query_image, index, limit=result_limit)
                 image_result_count = len(index)
+                # Diagnostics are intentionally limited to the isolated v3 test branch.
+                with st.expander('🔬 v3 辨識診斷｜CG-0001', expanded=False):
+                    diagnostic = diagnostic_image_match(query_image, index)
+                    st.caption('僅顯示診斷資訊，不影響實際搜尋排名。')
+                    st.write(f"上傳圖片尺寸：{diagnostic['input_size'][0]} × {diagnostic['input_size'][1]}")
+                    st.write(f"預處理尺寸：{diagnostic['prepared_size'][0]} × {diagnostic['prepared_size'][1]}")
+                    if diagnostic['trimmed_size'] is None:
+                        st.write('白邊裁切：未觸發')
+                    else:
+                        tw, th = diagnostic['trimmed_size']
+                        st.write(f'白邊裁切：已觸發，裁切後 {tw} × {th}')
+                    final_audit = diagnostic_final_ranking(query_image, index)
+                    aspect_audit = diagnostic_aspect_ratio(query_image, index)
+                    st.markdown('**第二階段｜最終排序稽核（唯讀）**')
+                    target_final = final_audit['target']
+                    if target_final is None:
+                        st.warning('CG-0001 未出現在最終排序索引。')
+                    else:
+                        final_position, final_item = target_final
+                        st.write(
+                            f"CG-0001 最終排名：{final_position} / {final_audit['total']}；"
+                            f"最高分：{final_item['score'] * 100:.1f}/100；"
+                            f"最佳區域：{final_item['region']}"
+                        )
+                    st.dataframe(
+                        [
+                            {
+                                '最終排名': i,
+                                '遊戲 ID': item['id'],
+                                '遊戲名稱': item['name'],
+                                '最高分': round(item['score'] * 100, 1),
+                                '最佳區域': item['region'],
+                            }
+                            for i, item in enumerate(final_audit['top_five'], 1)
+                        ],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    st.markdown('**第七階段｜相似度分數拆解（唯讀）**')
+                    st.caption(
+                        '顯示前五名及 CG-0001 各自最佳區域的原始特徵分數；'
+                        '權重固定為結構 48%、雜湊 32%、色彩 20%。'
+                        '最終分數 = max(0, 加權分數 − 區域面積扣分)。'
+                        '此表不影響實際搜尋、裁切或排名。'
+                    )
+                    breakdown = diagnostic_score_breakdown(query_image, index)
+                    st.dataframe(
+                        [
+                            {
+                                '遊戲 ID': item['id'],
+                                '最佳區域': item['region'],
+                                '結構原始分': round(item['structural'] * 100, 2),
+                                '雜湊原始分': round(item['hash'] * 100, 2),
+                                '色彩原始分': round(item['color'] * 100, 2),
+                                '結構貢獻(48%)': round(item['structural'] * 48, 2),
+                                '雜湊貢獻(32%)': round(item['hash'] * 32, 2),
+                                '色彩貢獻(20%)': round(item['color'] * 20, 2),
+                                '面積扣分': round(item['penalty'] * 100, 2),
+                                '最終分數': round(item['score'] * 100, 2),
+                            }
+                            for item in breakdown
+                        ],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    st.markdown('**Phase 8｜CG-0001 與 PA-0029 誤判對照（唯讀）**')
+                    comparison = diagnostic_competitor_comparison(
+                        query_image, index,
+                        target_id='CG-0001',
+                        competitor_id='PA-0029',
+                    )
+                    if len(comparison) == 2:
+                        st.dataframe(comparison, hide_index=True, use_container_width=True)
+                        gap = comparison[1]['最終分數'] - comparison[0]['最終分數']
+                        st.caption(f'PA-0029 相對 CG-0001 分數差：{gap:+.2f} 分。此診斷不修改排名。')
+                    else:
+                        st.caption('未能同時取得兩款遊戲的分數；請確認 PA-0029 是否仍在前五名。')
+
+                    st.markdown('**Phase 9｜權重模擬與排名比較（唯讀）**')
+                    st.caption(
+                        '每組方案對全部索引圖片與所有候選區域重新評分、'
+                        '重新選擇最佳區域及排序；不影響上方實際搜尋結果。'
+                    )
+                    simulation = diagnostic_weight_simulation(query_image, index)
+                    baseline = simulation['A｜原始設定']
+                    base_target = baseline['target']
+                    summary = []
+                    for scheme, result in simulation.items():
+                        target = result['target']
+                        competitor = result['competitor']
+                        summary.append({
+                            '方案': scheme,
+                            '圖片總數': result['total'],
+                            'CG-0001 排名': target['rank'] if target else None,
+                            'CG-0001 分數': round(target['score'] * 100, 2) if target else None,
+                            '排名提升': (base_target['rank'] - target['rank'])
+                                if target and base_target else None,
+                            'CG-0001 最佳區域': target['region'] if target else '未找到',
+                            'PA-0029 排名': competitor['rank'] if competitor else None,
+                            'PA-0029 分數': round(competitor['score'] * 100, 2)
+                                if competitor else None,
+                        })
+                    st.dataframe(summary, hide_index=True, use_container_width=True)
+                    if base_target is None:
+                        st.warning('CG-0001 不在目前的圖片索引中。')
+                    if baseline['total'] != len(index):
+                        st.warning('模擬筆數與圖片索引不一致，請檢查資料。')
+                    for scheme, result in simulation.items():
+                        with st.expander(f'{scheme}｜前五名及目標遊戲', expanded=False):
+                            selected = result['rows'][:5]
+                            for special in (result['target'], result['competitor']):
+                                if special and all(row['id'] != special['id'] for row in selected):
+                                    selected = selected + [special]
+                            st.dataframe(
+                                [{
+                                    '排名': row['rank'],
+                                    '遊戲 ID': row['id'],
+                                    '遊戲名稱': row['name'],
+                                    '最佳區域': row['region'],
+                                    '結構': round(row['structural'] * 100, 2),
+                                    '雜湊': round(row['hash'] * 100, 2),
+                                    '色彩': round(row['color'] * 100, 2),
+                                    '面積扣分': round(row['penalty'] * 100, 2),
+                                    '最終分數': round(row['score'] * 100, 2),
+                                } for row in selected],
+                                hide_index=True,
+                                use_container_width=True,
+                            )
+
+                    st.markdown('**Phase 10｜第一名誤判分析（唯讀）**')
+                    st.caption(
+                        '以 C 方案（結構 25%、雜湊 25%、色彩 50%）'
+                        '比較 CG-0001 與 DB-0041，包含所有候選區域；'
+                        '此區塊僅分析，不變更實際搜尋排名。'
+                    )
+                    phase10 = diagnostic_phase10_top1_analysis(query_image, index)
+                    st.write(f"本次分析涵蓋 {phase10['total']} 款索引圖片。")
+                    if len(phase10['summary']) == 2:
+                        st.dataframe(
+                            phase10['summary'],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+                        st.caption(
+                            f"DB-0041 相對 CG-0001 的 C 方案分數差："
+                            f"{phase10['gap']:+.2f} 分。"
+                        )
+                    else:
+                        st.warning('找不到 CG-0001 或 DB-0041，請檢查圖片索引。')
+                    with st.expander('Phase 10｜全部比對區域詳細分數', expanded=False):
+                        st.dataframe(
+                            phase10['per_region'],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
+                    st.caption(
+                        '評估時請同時檢查前五名其他遊戲的分數，'
+                        '避免只為單一截圖調整權重而造成其他誤判。'
+                    )
+
+                    st.markdown('**Phase 11｜比對區域可靠性與排名穩定性（唯讀）**')
+                    st.caption(
+                        '固定 C 方案權重，比較最佳區域、Top 3 平均與 Top 5 平均；'
+                        '每種策略皆重新排序全部索引圖片，不影響正式搜尋結果。'
+                    )
+                    phase11 = diagnostic_phase11_region_stability(query_image, index)
+                    st.write(f"每款遊戲評估 {phase11['region_count']} 個候選區域。")
+                    st.dataframe(
+                        phase11['summary'],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    st.markdown('**CG-0001 與 DB-0041｜區域分數穩定性**')
+                    st.dataframe(
+                        phase11['details'],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    for strategy, top_five in phase11['top_fives'].items():
+                        with st.expander(f'Phase 11｜{strategy}｜前五名', expanded=False):
+                            st.dataframe(
+                                top_five,
+                                hide_index=True,
+                                use_container_width=True,
+                            )
+                    st.caption(
+                        'Top 3 / Top 5 是同一張查詢圖片的候選區域平均，'
+                        '不代表獨立圖片的驗證準確率；'
+                        '重複名稱的區域仍視為不同候選位置。'
+                    )
+
+                    st.markdown('**Phase 12｜結構相似度異常分析（唯讀）**')
+                    st.caption(
+                        '比較原始負相關截斷、負相關映射及保留負相關貢獻；'
+                        '固定 C 方案其他權重、候選區域與面積扣分。'
+                        '僅為反事實模擬，不修改正式搜尋。'
+                    )
+                    phase12 = diagnostic_phase12_structure(query_image, index)
+                    st.write(f"每款遊戲評估 {phase12['region_count']} 個候選區域。")
+                    st.dataframe(
+                        phase12['summary'], hide_index=True, use_container_width=True
+                    )
+                    with st.expander('Phase 12｜兩款遊戲全部區域原始相關係數', expanded=False):
+                        st.dataframe(
+                            phase12['audit'], hide_index=True, use_container_width=True
+                        )
+                    for variant, rows in phase12['top_fives'].items():
+                        with st.expander(f'Phase 12｜{variant}｜前五名', expanded=False):
+                            st.dataframe(rows, hide_index=True, use_container_width=True)
+                    st.caption(
+                        '負相關映射會改變結構分數尺度；保留負相關則允許負貢獻。'
+                        '兩者均非已驗證改善方案，須用多張獨立標註圖片評估。'
+                    )
+                    st.markdown('**第二階段｜尺寸及長寬比**')
+                    st.write(
+                        f"查詢圖片：{aspect_audit['query_size'][0]} × "
+                        f"{aspect_audit['query_size'][1]}；"
+                        f"寬高比：{aspect_audit['query_ratio']:.3f}"
+                    )
+                    if aspect_audit['source_size'] is not None:
+                        sw, sh = aspect_audit['source_size']
+                        st.write(
+                            f"CG-0001 索引原圖：{sw} × {sh}；"
+                            f"寬高比：{aspect_audit['source_ratio']:.3f}；"
+                            f"比例差：{abs(aspect_audit['query_ratio'] - aspect_audit['source_ratio']):.3f}"
+                        )
+                    st.caption('上述資訊僅供診斷；未變更搜尋特徵、權重、裁切或排序。')
+                    if not diagnostic['target_found']:
+                        st.warning('CG-0001 不在目前可搜尋的圖片索引中。')
+                    else:
+                        st.dataframe(
+                            [
+                                {
+                                    '比對區域': item['label'],
+                                    '區域尺寸': f"{item['size'][0]} × {item['size'][1]}",
+                                    'CG-0001 排名': item['rank'],
+                                    '相似分數': round(item['score'] * 100, 1),
+                                }
+                                for item in diagnostic['regions']
+                            ],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
             subtitle = (
                 f'v2 多区域搜索 · 已比对 {image_result_count} 张有图片的游戏记录；'
                 '缺图游戏不参与图片搜索。'

@@ -864,6 +864,68 @@ def diagnostic_competitor_comparison(query, index, target_id='CG-0001', competit
     return result
 
 
+
+def diagnostic_weight_simulation(query, index, target_id='CG-0001', competitor_id='PA-0029'):
+    """Compare three hypothetical weights across every game and every region.
+
+    This is a read-only diagnostic; similarity() and production ranking stay intact.
+    """
+    schemes = {
+        'A｜原始設定': (0.48, 0.32, 0.20),
+        'B｜平衡方案': (0.35, 0.30, 0.35),
+        'C｜色彩加強': (0.25, 0.25, 0.50),
+    }
+    area = max(1, query.width * query.height)
+    candidates = []
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        candidates.append((label, image_features(region), penalty))
+
+    output = {}
+    for scheme, weights in schemes.items():
+        rows = []
+        for game, features in index:
+            best = None
+            for label, candidate, penalty in candidates:
+                gray_a, hash_a, hist_a = candidate
+                gray_b, hash_b, hist_b = features
+                structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+                if not np.isfinite(structural):
+                    structural = 0.0
+                structural = max(0.0, structural)
+                hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+                color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+                adjusted = (weights[0] * structural
+                            + weights[1] * hash_score
+                            + weights[2] * color_score - penalty)
+                if best is None or adjusted > best['adjusted']:
+                    best = {
+                        'id': str(game.get('id', '')).strip(),
+                        'name': str(game.get('name', '')),
+                        'region': label,
+                        'structural': structural,
+                        'hash': hash_score,
+                        'color': color_score,
+                        'penalty': penalty,
+                        'adjusted': adjusted,
+                        'score': max(0.0, adjusted),
+                    }
+            if best is not None:
+                rows.append(best)
+        # Python's stable sort preserves index order on equal scores.
+        rows.sort(key=lambda row: row['score'], reverse=True)
+        for rank, row in enumerate(rows, 1):
+            row['rank'] = rank
+        output[scheme] = {
+            'total': len(rows),
+            'rows': rows,
+            'target': next((row for row in rows if row['id'] == target_id), None),
+            'competitor': next((row for row in rows if row['id'] == competitor_id), None),
+        }
+    return output
+
+
 def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
     """Inspect source dimensions and letterboxing without changing matching."""
     game = next(
@@ -1372,6 +1434,57 @@ with result_col:
                         st.caption(f'PA-0029 相對 CG-0001 分數差：{gap:+.2f} 分。此診斷不修改排名。')
                     else:
                         st.caption('未能同時取得兩款遊戲的分數；請確認 PA-0029 是否仍在前五名。')
+
+                    st.markdown('**Phase 9｜權重模擬與排名比較（唯讀）**')
+                    st.caption(
+                        '每組方案對全部索引圖片與所有候選區域重新評分、'
+                        '重新選擇最佳區域及排序；不影響上方實際搜尋結果。'
+                    )
+                    simulation = diagnostic_weight_simulation(query_image, index)
+                    baseline = simulation['A｜原始設定']
+                    base_target = baseline['target']
+                    summary = []
+                    for scheme, result in simulation.items():
+                        target = result['target']
+                        competitor = result['competitor']
+                        summary.append({
+                            '方案': scheme,
+                            '圖片總數': result['total'],
+                            'CG-0001 排名': target['rank'] if target else None,
+                            'CG-0001 分數': round(target['score'] * 100, 2) if target else None,
+                            '排名提升': (base_target['rank'] - target['rank'])
+                                if target and base_target else None,
+                            'CG-0001 最佳區域': target['region'] if target else '未找到',
+                            'PA-0029 排名': competitor['rank'] if competitor else None,
+                            'PA-0029 分數': round(competitor['score'] * 100, 2)
+                                if competitor else None,
+                        })
+                    st.dataframe(summary, hide_index=True, use_container_width=True)
+                    if base_target is None:
+                        st.warning('CG-0001 不在目前的圖片索引中。')
+                    if baseline['total'] != len(index):
+                        st.warning('模擬筆數與圖片索引不一致，請檢查資料。')
+                    for scheme, result in simulation.items():
+                        with st.expander(f'{scheme}｜前五名及目標遊戲', expanded=False):
+                            selected = result['rows'][:5]
+                            for special in (result['target'], result['competitor']):
+                                if special and all(row['id'] != special['id'] for row in selected):
+                                    selected = selected + [special]
+                            st.dataframe(
+                                [{
+                                    '排名': row['rank'],
+                                    '遊戲 ID': row['id'],
+                                    '遊戲名稱': row['name'],
+                                    '最佳區域': row['region'],
+                                    '結構': round(row['structural'] * 100, 2),
+                                    '雜湊': round(row['hash'] * 100, 2),
+                                    '色彩': round(row['color'] * 100, 2),
+                                    '面積扣分': round(row['penalty'] * 100, 2),
+                                    '最終分數': round(row['score'] * 100, 2),
+                                } for row in selected],
+                                hide_index=True,
+                                use_container_width=True,
+                            )
                     st.markdown('**第二階段｜尺寸及長寬比**')
                     st.write(
                         f"查詢圖片：{aspect_audit['query_size'][0]} × "

@@ -996,6 +996,104 @@ def diagnostic_phase10_top1_analysis(query, index, target_id='CG-0001', competit
     }
 
 
+
+def diagnostic_phase11_region_stability(query, index, target_id='CG-0001', competitor_id='DB-0041'):
+    """Read-only full-index C-weight ranking with top-k region aggregation.
+
+    Each candidate is evaluated independently; region labels may repeat, so
+    unique candidate positions (not labels) define the observations.
+    """
+    weights = (0.25, 0.25, 0.50)
+    area = max(1, query.width * query.height)
+    candidates = []
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        candidates.append((label, image_features(region), penalty))
+    strategies = ('最佳區域', 'Top 3 區域平均', 'Top 5 區域平均')
+    rankings = {name: [] for name in strategies}
+    details = []
+    for game, features in index:
+        game_id = str(game.get('id', '')).strip()
+        region_scores = []
+        gray_b, hash_b, hist_b = features
+        for label, candidate, penalty in candidates:
+            gray_a, hash_a, hist_a = candidate
+            structural = float(np.corrcoef(gray_a.ravel(), gray_b.ravel())[0, 1])
+            if not np.isfinite(structural):
+                structural = 0.0
+            structural = max(0.0, structural)
+            hash_score = 1.0 - float(np.mean(hash_a != hash_b))
+            color_score = float(np.minimum(hist_a, hist_b).sum() / 3.0)
+            score = max(0.0, weights[0] * structural
+                        + weights[1] * hash_score
+                        + weights[2] * color_score - penalty)
+            region_scores.append((score, label))
+        region_scores.sort(key=lambda item: item[0], reverse=True)
+        for name, k in zip(strategies, (1, 3, 5)):
+            top = region_scores[:k]
+            value = sum(item[0] for item in top) / len(top) if top else 0.0
+            rankings[name].append({
+                'id': game_id,
+                'name': str(game.get('name', '')),
+                'score': value,
+                'best_region': region_scores[0][1] if region_scores else '',
+                'top_count': len(top),
+            })
+        if game_id in (target_id, competitor_id):
+            details.append({
+                '遊戲 ID': game_id,
+                '候選區域數': len(region_scores),
+                '最高分': round(region_scores[0][0] * 100, 2) if region_scores else None,
+                'Top 3 平均': round(
+                    sum(item[0] for item in region_scores[:3])
+                    / max(1, len(region_scores[:3])) * 100, 2
+                ),
+                'Top 5 平均': round(
+                    sum(item[0] for item in region_scores[:5])
+                    / max(1, len(region_scores[:5])) * 100, 2
+                ),
+                '最高與 Top 5 差距': round(
+                    (region_scores[0][0] -
+                     sum(item[0] for item in region_scores[:5])
+                     / max(1, len(region_scores[:5]))) * 100, 2
+                ) if region_scores else None,
+            })
+    summary = []
+    top_fives = {}
+    baseline_ranks = {}
+    for name in strategies:
+        rows = rankings[name]
+        rows.sort(key=lambda item: item['score'], reverse=True)
+        for rank, row in enumerate(rows, 1):
+            row['rank'] = rank
+        if name == strategies[0]:
+            baseline_ranks = {row['id']: row['rank'] for row in rows}
+        top_fives[name] = [{
+            '排名': row['rank'],
+            '遊戲 ID': row['id'],
+            '遊戲名稱': row['name'],
+            '分數': round(row['score'] * 100, 2),
+            '最佳區域': row['best_region'],
+        } for row in rows[:5]]
+        for game_id in (target_id, competitor_id):
+            row = next((item for item in rows if item['id'] == game_id), None)
+            summary.append({
+                '策略': name,
+                '索引圖片數': len(rows),
+                '遊戲 ID': game_id,
+                '排名': row['rank'] if row else None,
+                '分數': round(row['score'] * 100, 2) if row else None,
+                '相對最佳區域排名提升': (
+                    baseline_ranks[game_id] - row['rank']
+                    if row and game_id in baseline_ranks else None
+                ),
+                '最佳區域': row['best_region'] if row else '未找到',
+            })
+    return {'summary': summary, 'details': details,
+            'top_fives': top_fives, 'region_count': len(candidates)}
+
+
 def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
     """Inspect source dimensions and letterboxing without changing matching."""
     game = next(
@@ -1585,6 +1683,37 @@ with result_col:
                     st.caption(
                         '評估時請同時檢查前五名其他遊戲的分數，'
                         '避免只為單一截圖調整權重而造成其他誤判。'
+                    )
+
+                    st.markdown('**Phase 11｜比對區域可靠性與排名穩定性（唯讀）**')
+                    st.caption(
+                        '固定 C 方案權重，比較最佳區域、Top 3 平均與 Top 5 平均；'
+                        '每種策略皆重新排序全部索引圖片，不影響正式搜尋結果。'
+                    )
+                    phase11 = diagnostic_phase11_region_stability(query_image, index)
+                    st.write(f"每款遊戲評估 {phase11['region_count']} 個候選區域。")
+                    st.dataframe(
+                        phase11['summary'],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    st.markdown('**CG-0001 與 DB-0041｜區域分數穩定性**')
+                    st.dataframe(
+                        phase11['details'],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    for strategy, top_five in phase11['top_fives'].items():
+                        with st.expander(f'Phase 11｜{strategy}｜前五名', expanded=False):
+                            st.dataframe(
+                                top_five,
+                                hide_index=True,
+                                use_container_width=True,
+                            )
+                    st.caption(
+                        'Top 3 / Top 5 是同一張查詢圖片的候選區域平均，'
+                        '不代表獨立圖片的驗證準確率；'
+                        '重複名稱的區域仍視為不同候選位置。'
                     )
                     st.markdown('**第二階段｜尺寸及長寬比**')
                     st.write(

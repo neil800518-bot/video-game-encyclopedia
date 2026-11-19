@@ -360,37 +360,60 @@ def build_image_index():
 
 
 def remove_thumbnail_padding(img):
-    """Remove the uniform white canvas used by overview thumbnails.
+    """Conservatively remove near-white overview-thumbnail side padding.
 
-    Only trim when a nearly-white border touches all four sides, so
-    ordinary screenshots are left unchanged.
+    Accept either two white side bands or four-sided white padding.
+    Never crop a single side, and leave ordinary screenshots unchanged.
     """
     img = prepare_image(img)
-    rgb = np.asarray(img, dtype=np.uint8)
     if img.width < 48 or img.height < 48:
         return None
 
+    rgb = np.asarray(img, dtype=np.uint8)
     white = np.all(rgb >= 245, axis=2)
-    edge_white = [
-        float(white[0, :].mean()),
-        float(white[-1, :].mean()),
-        float(white[:, 0].mean()),
-        float(white[:, -1].mean()),
-    ]
-    if min(edge_white) < 0.90:
+    h, w = white.shape
+
+    # Count consecutive near-white columns from each side. A column must
+    # be almost entirely white, not just white at its corners.
+    column_white = white.mean(axis=0) >= 0.98
+    left = 0
+    while left < w and column_white[left]:
+        left += 1
+    right = w
+    while right > left and column_white[right - 1]:
+        right -= 1
+
+    # Require meaningful padding on BOTH sides. Limit the amount removed
+    # to avoid treating a mostly-white screenshot as a thumbnail canvas.
+    min_band = max(3, int(round(w * 0.015)))
+    if not (min_band <= left <= int(w * 0.30)
+            and min_band <= w - right <= int(w * 0.30)):
         return None
 
-    nonwhite = ~white
-    ys, xs = np.where(nonwhite)
-    if len(xs) == 0:
+    # The inner edges should be substantially more colorful than the
+    # padding, which guards against cropping plain light game screens.
+    if right - left < 32:
+        return None
+    inner = white[:, left:right]
+    if float((~inner).mean()) < 0.20:
         return None
 
-    left, right = int(xs.min()), int(xs.max()) + 1
-    top, bottom = int(ys.min()), int(ys.max()) + 1
-    if (right - left) < 32 or (bottom - top) < 32:
+    # Optionally remove top/bottom near-white rows inside the content
+    # width; neither is required for side-padding detection.
+    row_white = white[:, left:right].mean(axis=1) >= 0.98
+    top = 0
+    while top < h and row_white[top]:
+        top += 1
+    bottom = h
+    while bottom > top and row_white[bottom - 1]:
+        bottom -= 1
+    if top > int(h * 0.20):
+        top = 0
+    if h - bottom > int(h * 0.20):
+        bottom = h
+    if bottom - top < 32:
         return None
-    if (right - left) >= img.width - 2 and (bottom - top) >= img.height - 2:
-        return None
+
     return img.crop((left, top, right, bottom))
 
 

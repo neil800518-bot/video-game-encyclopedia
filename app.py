@@ -359,11 +359,97 @@ def build_image_index():
     return entries
 
 
+def remove_thumbnail_padding(img):
+    """Conservatively trim matching near-white thumbnail padding bands.
+
+    Supports two-sided horizontal padding (portrait game), two-sided
+    vertical padding (landscape game), and the existing optional four-side
+    trimming. Never remove just one edge of an ordinary screenshot.
+    """
+    img = prepare_image(img)
+    if img.width < 48 or img.height < 48:
+        return None
+
+    rgb = np.asarray(img, dtype=np.uint8)
+    white = np.all(rgb >= 245, axis=2)
+    h, w = white.shape
+
+    # Existing phase-three bilateral LEFT/RIGHT trimming is retained.
+    column_white = white.mean(axis=0) >= 0.98
+    left = 0
+    while left < w and column_white[left]:
+        left += 1
+    right = w
+    while right > left and column_white[right - 1]:
+        right -= 1
+
+    min_band = max(3, int(round(w * 0.015)))
+    side_bands = (
+        min_band <= left <= int(w * 0.30)
+        and min_band <= w - right <= int(w * 0.30)
+        and right - left >= 32
+    )
+    if side_bands:
+        inner = white[:, left:right]
+        if float((~inner).mean()) >= 0.20:
+            # Preserve the optional top/bottom trimming from phase three.
+            row_white = white[:, left:right].mean(axis=1) >= 0.98
+            top = 0
+            while top < h and row_white[top]:
+                top += 1
+            bottom = h
+            while bottom > top and row_white[bottom - 1]:
+                bottom -= 1
+            if top > int(h * 0.20):
+                top = 0
+            if h - bottom > int(h * 0.20):
+                bottom = h
+            if bottom - top >= 32:
+                return img.crop((left, top, right, bottom))
+
+    # Landscape artwork in the 240x320 overview canvas often has no
+    # left/right bands, but substantial matching TOP/BOTTOM white bands.
+    # Evaluate this separately so portrait-game behavior is unaffected.
+    row_white = white.mean(axis=1) >= 0.98
+    top = 0
+    while top < h and row_white[top]:
+        top += 1
+    bottom = h
+    while bottom > top and row_white[bottom - 1]:
+        bottom -= 1
+
+    min_row_band = max(3, int(round(h * 0.015)))
+    if not (
+        min_row_band <= top <= int(h * 0.45)
+        and min_row_band <= h - bottom <= int(h * 0.45)
+        and bottom - top >= 32
+    ):
+        return None
+
+    inner = white[top:bottom, :]
+    if float((~inner).mean()) < 0.20:
+        return None
+
+    # Strongly prefer wide content for this fallback, limiting accidental
+    # cropping of a tall, mostly-white game screenshot.
+    if w / max(1, bottom - top) < 1.15:
+        return None
+
+    return img.crop((0, top, w, bottom))
+
+
 def query_regions(img):
     img = prepare_image(img)
     w, h = img.size
 
     regions = [('完整截图', img)]
+
+    # Overview cards are letterboxed on a 240x320 white canvas.
+    # Compare their unpadded content as an additional query candidate.
+    unpadded = remove_thumbnail_padding(img)
+    if unpadded is not None:
+        regions.append(('去除总览缩图白边', unpadded))
+
 
     for fraction in (0.28, 0.38, 0.50, 0.65, 0.80):
         crop_w = max(32, int(w * fraction))
@@ -446,6 +532,109 @@ def rank_image_matches(query, index, limit=5):
         key=lambda item: item[0],
         reverse=True,
     )[:limit]
+
+
+def diagnostic_image_match(query, index, target_id='CG-0001'):
+    """Read-only v3 diagnostics; ranking algorithm remains unchanged."""
+    prepared = prepare_image(query)
+    trimmed = remove_thumbnail_padding(query)
+    all_regions = query_regions(query)
+    target = next(
+        ((game, features) for game, features in index
+         if str(game.get('id', '')).strip() == target_id),
+        None,
+    )
+    details = {
+        'input_size': query.size,
+        'prepared_size': prepared.size,
+        'trimmed_size': trimmed.size if trimmed is not None else None,
+        'target_found': target is not None,
+        'regions': [],
+    }
+    if target is None:
+        return details
+    for label, region in all_regions:
+        features = image_features(region)
+        fraction = region.width * region.height / max(1, query.width * query.height)
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        target_score = max(0.0, similarity(features, target[1]) - penalty)
+        higher = sum(
+            similarity(features, other_features) - penalty > target_score
+            for _, other_features in index
+        )
+        details['regions'].append({
+            'label': label,
+            'size': region.size,
+            'rank': higher + 1,
+            'score': target_score,
+        })
+    return details
+
+
+
+def diagnostic_final_ranking(query, index, target_id='CG-0001'):
+    """Read-only audit of the existing best-region ranking, with no score changes."""
+    regions = []
+    area = max(1, query.width * query.height)
+    for label, region in query_regions(query):
+        fraction = region.width * region.height / area
+        penalty = 0.025 * (1 - min(1.0, fraction))
+        regions.append((label, image_features(region), penalty))
+
+    results = []
+    for game, features in index:
+        if not regions:
+            continue
+        score, label = max(
+            ((similarity(candidate, features) - penalty, label)
+             for label, candidate, penalty in regions),
+            key=lambda value: value[0],
+        )
+        results.append({
+            'id': str(game.get('id', '')).strip(),
+            'name': str(game.get('name', '')),
+            'score': max(0.0, score),
+            'region': label,
+        })
+    results.sort(key=lambda item: item['score'], reverse=True)
+    target = next(
+        ((position, item) for position, item in enumerate(results, 1)
+         if item['id'] == target_id),
+        None,
+    )
+    return {
+        'target': target,
+        'top_five': results[:5],
+        'total': len(results),
+    }
+
+
+def diagnostic_aspect_ratio(query, index, target_id='CG-0001'):
+    """Inspect source dimensions and letterboxing without changing matching."""
+    game = next(
+        (game for game, _ in index
+         if str(game.get('id', '')).strip() == target_id),
+        None,
+    )
+    output = {
+        'query_size': query.size,
+        'query_ratio': query.width / max(1, query.height),
+        'source_size': None,
+        'source_ratio': None,
+    }
+    if game is None:
+        return output
+    path = safe_image_path(game)
+    if path is None:
+        return output
+    try:
+        with Image.open(path) as image:
+            oriented = oriented_game_image(image, game)
+            output['source_size'] = oriented.size
+            output['source_ratio'] = oriented.width / max(1, oriented.height)
+    except (OSError, ValueError, UnidentifiedImageError):
+        pass
+    return output
 
 
 def decode_pasted_image(data):
@@ -851,6 +1040,74 @@ with result_col:
                     index = build_image_index()
                     ranked = rank_image_matches(query_image, index, limit=result_limit)
                 image_result_count = len(index)
+                # Diagnostics are intentionally limited to the isolated v3 test branch.
+                with st.expander('🔬 v3 辨識診斷｜CG-0001', expanded=False):
+                    diagnostic = diagnostic_image_match(query_image, index)
+                    st.caption('僅顯示診斷資訊，不影響實際搜尋排名。')
+                    st.write(f"上傳圖片尺寸：{diagnostic['input_size'][0]} × {diagnostic['input_size'][1]}")
+                    st.write(f"預處理尺寸：{diagnostic['prepared_size'][0]} × {diagnostic['prepared_size'][1]}")
+                    if diagnostic['trimmed_size'] is None:
+                        st.write('白邊裁切：未觸發')
+                    else:
+                        tw, th = diagnostic['trimmed_size']
+                        st.write(f'白邊裁切：已觸發，裁切後 {tw} × {th}')
+                    final_audit = diagnostic_final_ranking(query_image, index)
+                    aspect_audit = diagnostic_aspect_ratio(query_image, index)
+                    st.markdown('**第二階段｜最終排序稽核（唯讀）**')
+                    target_final = final_audit['target']
+                    if target_final is None:
+                        st.warning('CG-0001 未出現在最終排序索引。')
+                    else:
+                        final_position, final_item = target_final
+                        st.write(
+                            f"CG-0001 最終排名：{final_position} / {final_audit['total']}；"
+                            f"最高分：{final_item['score'] * 100:.1f}/100；"
+                            f"最佳區域：{final_item['region']}"
+                        )
+                    st.dataframe(
+                        [
+                            {
+                                '最終排名': i,
+                                '遊戲 ID': item['id'],
+                                '遊戲名稱': item['name'],
+                                '最高分': round(item['score'] * 100, 1),
+                                '最佳區域': item['region'],
+                            }
+                            for i, item in enumerate(final_audit['top_five'], 1)
+                        ],
+                        hide_index=True,
+                        use_container_width=True,
+                    )
+                    st.markdown('**第二階段｜尺寸及長寬比**')
+                    st.write(
+                        f"查詢圖片：{aspect_audit['query_size'][0]} × "
+                        f"{aspect_audit['query_size'][1]}；"
+                        f"寬高比：{aspect_audit['query_ratio']:.3f}"
+                    )
+                    if aspect_audit['source_size'] is not None:
+                        sw, sh = aspect_audit['source_size']
+                        st.write(
+                            f"CG-0001 索引原圖：{sw} × {sh}；"
+                            f"寬高比：{aspect_audit['source_ratio']:.3f}；"
+                            f"比例差：{abs(aspect_audit['query_ratio'] - aspect_audit['source_ratio']):.3f}"
+                        )
+                    st.caption('上述資訊僅供診斷；未變更搜尋特徵、權重、裁切或排序。')
+                    if not diagnostic['target_found']:
+                        st.warning('CG-0001 不在目前可搜尋的圖片索引中。')
+                    else:
+                        st.dataframe(
+                            [
+                                {
+                                    '比對區域': item['label'],
+                                    '區域尺寸': f"{item['size'][0]} × {item['size'][1]}",
+                                    'CG-0001 排名': item['rank'],
+                                    '相似分數': round(item['score'] * 100, 1),
+                                }
+                                for item in diagnostic['regions']
+                            ],
+                            hide_index=True,
+                            use_container_width=True,
+                        )
             subtitle = (
                 f'v2 多区域搜索 · 已比对 {image_result_count} 张有图片的游戏记录；'
                 '缺图游戏不参与图片搜索。'

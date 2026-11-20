@@ -360,10 +360,11 @@ def build_image_index():
 
 
 def remove_thumbnail_padding(img):
-    """Conservatively remove near-white overview-thumbnail side padding.
+    """Conservatively trim matching near-white thumbnail padding bands.
 
-    Accept either two white side bands or four-sided white padding.
-    Never crop a single side, and leave ordinary screenshots unchanged.
+    Supports two-sided horizontal padding (portrait game), two-sided
+    vertical padding (landscape game), and the existing optional four-side
+    trimming. Never remove just one edge of an ordinary screenshot.
     """
     img = prepare_image(img)
     if img.width < 48 or img.height < 48:
@@ -373,8 +374,7 @@ def remove_thumbnail_padding(img):
     white = np.all(rgb >= 245, axis=2)
     h, w = white.shape
 
-    # Count consecutive near-white columns from each side. A column must
-    # be almost entirely white, not just white at its corners.
+    # Existing phase-three bilateral LEFT/RIGHT trimming is retained.
     column_white = white.mean(axis=0) >= 0.98
     left = 0
     while left < w and column_white[left]:
@@ -383,38 +383,59 @@ def remove_thumbnail_padding(img):
     while right > left and column_white[right - 1]:
         right -= 1
 
-    # Require meaningful padding on BOTH sides. Limit the amount removed
-    # to avoid treating a mostly-white screenshot as a thumbnail canvas.
     min_band = max(3, int(round(w * 0.015)))
-    if not (min_band <= left <= int(w * 0.30)
-            and min_band <= w - right <= int(w * 0.30)):
-        return None
+    side_bands = (
+        min_band <= left <= int(w * 0.30)
+        and min_band <= w - right <= int(w * 0.30)
+        and right - left >= 32
+    )
+    if side_bands:
+        inner = white[:, left:right]
+        if float((~inner).mean()) >= 0.20:
+            # Preserve the optional top/bottom trimming from phase three.
+            row_white = white[:, left:right].mean(axis=1) >= 0.98
+            top = 0
+            while top < h and row_white[top]:
+                top += 1
+            bottom = h
+            while bottom > top and row_white[bottom - 1]:
+                bottom -= 1
+            if top > int(h * 0.20):
+                top = 0
+            if h - bottom > int(h * 0.20):
+                bottom = h
+            if bottom - top >= 32:
+                return img.crop((left, top, right, bottom))
 
-    # The inner edges should be substantially more colorful than the
-    # padding, which guards against cropping plain light game screens.
-    if right - left < 32:
-        return None
-    inner = white[:, left:right]
-    if float((~inner).mean()) < 0.20:
-        return None
-
-    # Optionally remove top/bottom near-white rows inside the content
-    # width; neither is required for side-padding detection.
-    row_white = white[:, left:right].mean(axis=1) >= 0.98
+    # Landscape artwork in the 240x320 overview canvas often has no
+    # left/right bands, but substantial matching TOP/BOTTOM white bands.
+    # Evaluate this separately so portrait-game behavior is unaffected.
+    row_white = white.mean(axis=1) >= 0.98
     top = 0
     while top < h and row_white[top]:
         top += 1
     bottom = h
     while bottom > top and row_white[bottom - 1]:
         bottom -= 1
-    if top > int(h * 0.20):
-        top = 0
-    if h - bottom > int(h * 0.20):
-        bottom = h
-    if bottom - top < 32:
+
+    min_row_band = max(3, int(round(h * 0.015)))
+    if not (
+        min_row_band <= top <= int(h * 0.45)
+        and min_row_band <= h - bottom <= int(h * 0.45)
+        and bottom - top >= 32
+    ):
         return None
 
-    return img.crop((left, top, right, bottom))
+    inner = white[top:bottom, :]
+    if float((~inner).mean()) < 0.20:
+        return None
+
+    # Strongly prefer wide content for this fallback, limiting accidental
+    # cropping of a tall, mostly-white game screenshot.
+    if w / max(1, bottom - top) < 1.15:
+        return None
+
+    return img.crop((0, top, w, bottom))
 
 
 def query_regions(img):

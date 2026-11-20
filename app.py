@@ -359,11 +359,96 @@ def build_image_index():
     return entries
 
 
+def remove_thumbnail_padding(img):
+    """Conservatively trim matching near-white thumbnail padding bands.
+
+    Supports two-sided horizontal padding (portrait game), two-sided
+    vertical padding (landscape game), and the existing optional four-side
+    trimming. Never remove just one edge of an ordinary screenshot.
+    """
+    img = prepare_image(img)
+    if img.width < 48 or img.height < 48:
+        return None
+
+    rgb = np.asarray(img, dtype=np.uint8)
+    white = np.all(rgb >= 245, axis=2)
+    h, w = white.shape
+
+    # Existing phase-three bilateral LEFT/RIGHT trimming is retained.
+    column_white = white.mean(axis=0) >= 0.98
+    left = 0
+    while left < w and column_white[left]:
+        left += 1
+    right = w
+    while right > left and column_white[right - 1]:
+        right -= 1
+
+    min_band = max(3, int(round(w * 0.015)))
+    side_bands = (
+        min_band <= left <= int(w * 0.30)
+        and min_band <= w - right <= int(w * 0.30)
+        and right - left >= 32
+    )
+    if side_bands:
+        inner = white[:, left:right]
+        if float((~inner).mean()) >= 0.20:
+            # Preserve the optional top/bottom trimming from phase three.
+            row_white = white[:, left:right].mean(axis=1) >= 0.98
+            top = 0
+            while top < h and row_white[top]:
+                top += 1
+            bottom = h
+            while bottom > top and row_white[bottom - 1]:
+                bottom -= 1
+            if top > int(h * 0.20):
+                top = 0
+            if h - bottom > int(h * 0.20):
+                bottom = h
+            if bottom - top >= 32:
+                return img.crop((left, top, right, bottom))
+
+    # Landscape artwork in the 240x320 overview canvas often has no
+    # left/right bands, but substantial matching TOP/BOTTOM white bands.
+    # Evaluate this separately so portrait-game behavior is unaffected.
+    row_white = white.mean(axis=1) >= 0.98
+    top = 0
+    while top < h and row_white[top]:
+        top += 1
+    bottom = h
+    while bottom > top and row_white[bottom - 1]:
+        bottom -= 1
+
+    min_row_band = max(3, int(round(h * 0.015)))
+    if not (
+        min_row_band <= top <= int(h * 0.45)
+        and min_row_band <= h - bottom <= int(h * 0.45)
+        and bottom - top >= 32
+    ):
+        return None
+
+    inner = white[top:bottom, :]
+    if float((~inner).mean()) < 0.20:
+        return None
+
+    # Strongly prefer wide content for this fallback, limiting accidental
+    # cropping of a tall, mostly-white game screenshot.
+    if w / max(1, bottom - top) < 1.15:
+        return None
+
+    return img.crop((0, top, w, bottom))
+
+
 def query_regions(img):
     img = prepare_image(img)
     w, h = img.size
 
     regions = [('完整截图', img)]
+
+    # Keep the original full-image and multi-region candidates unchanged.
+    # Add trimmed gallery content as one optional image-search candidate.
+    unpadded = remove_thumbnail_padding(img)
+    if unpadded is not None:
+        regions.append(('去除总览缩图白边', unpadded))
 
     for fraction in (0.28, 0.38, 0.50, 0.65, 0.80):
         crop_w = max(32, int(w * fraction))

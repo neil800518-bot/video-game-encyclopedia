@@ -1420,6 +1420,96 @@
     "source_image_id": "ID_A4B9CF48053548088DD35BBC06A724CE"
   },
   {
+    "id": "CG-0143",
+    "provider": "CG",
+    "name": "十倍金牛",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "C44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0144",
+    "provider": "CG",
+    "name": "NBA·纽约之王",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "D44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0145",
+    "provider": "CG",
+    "name": "金猪乐果",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "E44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0146",
+    "provider": "CG",
+    "name": "热浪夏威夷",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "F44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0147",
+    "provider": "CG",
+    "name": "巨额红包",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "G44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0148",
+    "provider": "CG",
+    "name": "异界童话",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "H44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0149",
+    "provider": "CG",
+    "name": "耳光派对",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "I44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0150",
+    "provider": "CG",
+    "name": "九转金丹",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "J44",
+    "source_image_id": ""
+  },
+  {
+    "id": "CG-0151",
+    "provider": "CG",
+    "name": "史莱姆饿了",
+    "image": "",
+    "image_status": "待补图片",
+    "source_sheet": "CG电子",
+    "source_cell": "A47",
+    "source_image_id": ""
+  },
+  {
     "id": "PP-0001",
     "provider": "PP",
     "name": "奥林匹斯之门POP",

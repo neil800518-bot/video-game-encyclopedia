@@ -1426,28 +1426,28 @@
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "C44",
-    "source_image_id": ""
+    "source_cell": "C59",
+    "source_image_id": "ID_7EB5D3BD2C314413A59D9F9D3D4998A0"
   },
   {
     "id": "CG-0144",
     "provider": "CG",
-    "name": "NBA·纽约之王",
+    "name": "NBA:纽约之王",
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "D44",
-    "source_image_id": ""
+    "source_cell": "D59",
+    "source_image_id": "ID_74A974BC084D4ACD8AD90C5D3AC76114"
   },
   {
     "id": "CG-0145",
     "provider": "CG",
-    "name": "金猪乐果",
+    "name": "金猪宾果",
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "E44",
-    "source_image_id": ""
+    "source_cell": "E59",
+    "source_image_id": "ID_977EB059FE3B4D7C9268696A0DA079D1"
   },
   {
     "id": "CG-0146",
@@ -1456,8 +1456,8 @@
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "F44",
-    "source_image_id": ""
+    "source_cell": "F59",
+    "source_image_id": "ID_CF020A07304E430AB7E7E71E5BFC2DF1"
   },
   {
     "id": "CG-0147",
@@ -1466,8 +1466,8 @@
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "G44",
-    "source_image_id": ""
+    "source_cell": "G59",
+    "source_image_id": "ID_FA63654BBBBF420EB1918191BAE07C9D"
   },
   {
     "id": "CG-0148",
@@ -1476,8 +1476,8 @@
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "H44",
-    "source_image_id": ""
+    "source_cell": "H59",
+    "source_image_id": "ID_DB2EFD228C5640C7A9A94EA374EF19D7"
   },
   {
     "id": "CG-0149",
@@ -1486,8 +1486,8 @@
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "I44",
-    "source_image_id": ""
+    "source_cell": "I59",
+    "source_image_id": "ID_1814F60E9D084FABA8338CDCFE82B5EF"
   },
   {
     "id": "CG-0150",
@@ -1496,8 +1496,8 @@
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "J44",
-    "source_image_id": ""
+    "source_cell": "J59",
+    "source_image_id": "ID_B1CD8768790E488494EE1C8D0A64C344"
   },
   {
     "id": "CG-0151",
@@ -1506,8 +1506,8 @@
     "image": "",
     "image_status": "待补图片",
     "source_sheet": "CG电子",
-    "source_cell": "A47",
-    "source_image_id": ""
+    "source_cell": "A63",
+    "source_image_id": "ID_9A8022012B3749438C14B398C3231DC0"
   },
   {
     "id": "PP-0001",

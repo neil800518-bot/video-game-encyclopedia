@@ -1420,6 +1420,96 @@
     "source_image_id": "ID_A4B9CF48053548088DD35BBC06A724CE"
   },
   {
+    "id": "CG-0143",
+    "provider": "CG",
+    "name": "十倍金牛",
+    "image": "CG-0143.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "C59",
+    "source_image_id": "ID_7EB5D3BD2C314413A59D9F9D3D4998A0"
+  },
+  {
+    "id": "CG-0144",
+    "provider": "CG",
+    "name": "NBA:纽约之王",
+    "image": "CG-0144.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "D59",
+    "source_image_id": "ID_74A974BC084D4ACD8AD90C5D3AC76114"
+  },
+  {
+    "id": "CG-0145",
+    "provider": "CG",
+    "name": "金猪宾果",
+    "image": "CG-0145.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "E59",
+    "source_image_id": "ID_977EB059FE3B4D7C9268696A0DA079D1"
+  },
+  {
+    "id": "CG-0146",
+    "provider": "CG",
+    "name": "热浪夏威夷",
+    "image": "CG-0146.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "F59",
+    "source_image_id": "ID_CF020A07304E430AB7E7E71E5BFC2DF1"
+  },
+  {
+    "id": "CG-0147",
+    "provider": "CG",
+    "name": "巨额红包",
+    "image": "CG-0147.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "G59",
+    "source_image_id": "ID_FA63654BBBBF420EB1918191BAE07C9D"
+  },
+  {
+    "id": "CG-0148",
+    "provider": "CG",
+    "name": "异界童话",
+    "image": "CG-0148.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "H59",
+    "source_image_id": "ID_DB2EFD228C5640C7A9A94EA374EF19D7"
+  },
+  {
+    "id": "CG-0149",
+    "provider": "CG",
+    "name": "耳光派对",
+    "image": "CG-0149.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "I59",
+    "source_image_id": "ID_1814F60E9D084FABA8338CDCFE82B5EF"
+  },
+  {
+    "id": "CG-0150",
+    "provider": "CG",
+    "name": "九转金丹",
+    "image": "CG-0150.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "J59",
+    "source_image_id": "ID_B1CD8768790E488494EE1C8D0A64C344"
+  },
+  {
+    "id": "CG-0151",
+    "provider": "CG",
+    "name": "史莱姆饿了",
+    "image": "CG-0151.png",
+    "image_status": "已有图片",
+    "source_sheet": "CG电子",
+    "source_cell": "A63",
+    "source_image_id": "ID_9A8022012B3749438C14B398C3231DC0"
+  },
+  {
     "id": "PP-0001",
     "provider": "PP",
     "name": "奥林匹斯之门POP",

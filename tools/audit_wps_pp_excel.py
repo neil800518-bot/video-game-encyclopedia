@@ -198,7 +198,7 @@ def audit(input_path, out_dir, extract_ids):
                     (img_dir / fname).write_bytes(blob)
             if number == 604:
                 problems.append("IMAGE_MANUAL_REVIEW_REQUIRED")
-                if name != "疯狂大鲈鱼欢乐爆发 1000":
+                if name != "财神聚宝盆":
                     problems.append("NAME_MISMATCH_WITH_CONFIRMED_CORRECTION")
             rows.append(dict(
                 excel_id="PP-{:04d}".format(number),

@@ -1,0 +1,49 @@
+{
+  "excel_count": 610,
+  "excel_unique_ids": 610,
+  "main_pp_count": 324,
+  "main_pp_with_images": 50,
+  "unique_exact_name_matches": 318,
+  "shifted_exact_matches": 268,
+  "duplicate_name_old_matches": 3,
+  "non_exact_name_old_matches": 3,
+  "net_extra_excel_positions": 286,
+  "pp_0604": {
+    "excel_id": "PP-0604",
+    "name": "财神聚宝盆",
+    "name_cell": "D243",
+    "number_cell": "D242",
+    "number_cached": "604",
+    "image_cell": "D241",
+    "source_image_id": "ID_FD3B4D4375F742778D28CE6EB415CD90",
+    "image_member": "xl/media/image1118.png",
+    "bytes": "426141",
+    "dimensions": "375x667",
+    "sha256": "d577beb171ad80ce9be6fc358b947c5615792e614ed72b9c5f8fb716b7cd27ef",
+    "flags": "IMAGE_MANUAL_REVIEW_REQUIRED;NAME_MISMATCH_WITH_CONFIRMED_CORRECTION"
+  },
+  "expected_duplicate_checks": [
+    {
+      "name": "王者野牛",
+      "ids": "PP-0056;PP-0069",
+      "expected_ids": "PP-0056;PP-0069",
+      "ids_ok": true,
+      "images_distinct": true
+    },
+    {
+      "name": "阿茲特克国王",
+      "ids": "PP-0195;PP-0201",
+      "expected_ids": "PP-0195;PP-0201",
+      "ids_ok": true,
+      "images_distinct": true
+    },
+    {
+      "name": "疯狂大鲈鱼",
+      "ids": "PP-0180;PP-0204",
+      "expected_ids": "PP-0180;PP-0204",
+      "ids_ok": true,
+      "images_distinct": true
+    }
+  ],
+  "problems": []
+}
